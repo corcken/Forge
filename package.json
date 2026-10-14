@@ -12,7 +12,7 @@
     "apps/*"
   ],
   "scripts": {
-    "build": "npm run build:shared && npm run build --workspace=@descriptio-forge/server",
+    "build": "npm run build:shared && npm run build --workspace=@descriptio-forge/server && npm run build --workspace=@descriptio-forge/web",
     "build:shared": "npm run build --workspace=@descriptio-forge/shared",
     "typecheck": "npm run typecheck --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present"

@@ -1,6 +1,8 @@
 import { createServer } from './server.js';
 import { initializeServices } from './services.js';
 
+export type { AppRouter } from './trpc/routers/app-router.js';
+
 const PORT = Number(process.env.PORT ?? 4317);
 const HOST = process.env.HOST ?? '127.0.0.1';
 
