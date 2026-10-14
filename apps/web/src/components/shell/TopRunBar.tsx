@@ -1,5 +1,6 @@
 import { Bot, GitBranch, Lock, Unlock } from 'lucide-react';
 import { trpc } from '../../lib/trpc';
+import { QueueIndicator } from './QueueIndicator';
 
 /** Permanente h-[32px] Kopfzeile: Run-Switcher, Fork/Lock, KI-Status. */
 export function TopRunBar() {
@@ -80,6 +81,8 @@ export function TopRunBar() {
         Diff
       </button>
       <div className="flex-1" />
+      <QueueIndicator />
+      <div className="mx-1 h-[18px] w-px bg-slate-200 dark:bg-slate-700" />
       <span className="flex items-center gap-1.5 text-[11px] text-slate-500 dark:text-slate-400">
         <Bot className="h-3.5 w-3.5" />
         KI: {okProviders > 0 ? `${okProviders} Provider OK` : 'kein Test'}

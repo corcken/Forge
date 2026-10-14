@@ -19,8 +19,8 @@ export interface ExtractionSummary {
 }
 
 /**
- * Fuehrt die KI-Faktorenextraktion (Stufe 2) fuer ausgewaehlte Artikel eines
- * Runs aus. Nutzt ausschliesslich den globalen Rohdaten-Cache als Quelle.
+ * Fuehrt die KI-Faktorenextraktion (Stufe 2) fuer Artikel eines Runs aus.
+ * Quelle ist ausschliesslich der globale Rohdaten-Cache.
  */
 export class ExtractionService {
   constructor(
@@ -30,54 +30,64 @@ export class ExtractionService {
     private readonly gateway: AiGateway,
   ) {}
 
+  private archetypeIds(): string[] {
+    return this.globalDb.listArchetypes().map((archetype) => archetype.id);
+  }
+
+  /** Extrahiert die Fakten eines einzelnen Artikels. */
+  async extractOne(
+    runId: string,
+    partId: string,
+    providerId: string,
+    modelId: string,
+  ): Promise<ExtractionItemResult> {
+    const staged = this.parts.getPart(runId, partId);
+    if (!staged) return { partId, status: 'ERROR', error: 'Artikel nicht im Run gefunden.' };
+
+    const raw = this.globalDb.findRawDocument(staged.manufacturer, staged.articleNr);
+    if (!raw?.extractedMarkdown) {
+      return {
+        partId,
+        status: 'ERROR',
+        error: 'Keine Rohdaten gecacht (Ingestion folgt in Meilenstein 7).',
+      };
+    }
+
+    const archetypeIds = this.archetypeIds();
+    try {
+      const extracted = await this.gateway.extractFacts(providerId, {
+        modelId,
+        systemPrompt: buildExtractionSystemPrompt(archetypeIds),
+        userText: raw.extractedMarkdown,
+        allowedArchetypeIds: archetypeIds,
+      });
+      const model = this.aiVault.getModel(`${providerId}:${modelId}`);
+      const costUsd = model
+        ? (extracted.inputTokens / 1_000_000) * (model.inputPricePer1m ?? 0) +
+          (extracted.outputTokens / 1_000_000) * (model.outputPricePer1m ?? 0)
+        : 0;
+      this.parts.saveExtraction(runId, partId, extracted.data, modelId, costUsd);
+      return { partId, status: 'AI_EXTRACTED', costUsd };
+    } catch (error) {
+      return {
+        partId,
+        status: 'ERROR',
+        error: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  /** Extrahiert mehrere Artikel sequenziell (Synchron-Variante ohne Queue). */
   async extractParts(
     runId: string,
     partIds: string[],
     providerId: string,
     modelId: string,
   ): Promise<ExtractionSummary> {
-    const archetypeIds = this.globalDb.listArchetypes().map((archetype) => archetype.id);
-    const systemPrompt = buildExtractionSystemPrompt(archetypeIds);
-    const model = this.aiVault.getModel(`${providerId}:${modelId}`);
     const results: ExtractionItemResult[] = [];
-
     for (const partId of partIds) {
-      const staged = this.parts.getPart(runId, partId);
-      if (!staged) {
-        results.push({ partId, status: 'ERROR', error: 'Artikel nicht im Run gefunden.' });
-        continue;
-      }
-      const raw = this.globalDb.findRawDocument(staged.manufacturer, staged.articleNr);
-      if (!raw?.extractedMarkdown) {
-        results.push({
-          partId,
-          status: 'ERROR',
-          error: 'Keine Rohdaten gecacht (Ingestion folgt in Meilenstein 7).',
-        });
-        continue;
-      }
-      try {
-        const extracted = await this.gateway.extractFacts(providerId, {
-          modelId,
-          systemPrompt,
-          userText: raw.extractedMarkdown,
-          allowedArchetypeIds: archetypeIds,
-        });
-        const costUsd = model
-          ? (extracted.inputTokens / 1_000_000) * (model.inputPricePer1m ?? 0) +
-            (extracted.outputTokens / 1_000_000) * (model.outputPricePer1m ?? 0)
-          : 0;
-        this.parts.saveExtraction(runId, partId, extracted.data, modelId, costUsd);
-        results.push({ partId, status: 'AI_EXTRACTED', costUsd });
-      } catch (error) {
-        results.push({
-          partId,
-          status: 'ERROR',
-          error: error instanceof Error ? error.message : String(error),
-        });
-      }
+      results.push(await this.extractOne(runId, partId, providerId, modelId));
     }
-
     const extracted = results.filter((result) => result.status === 'AI_EXTRACTED').length;
     return { runId, extracted, errors: results.length - extracted, results };
   }

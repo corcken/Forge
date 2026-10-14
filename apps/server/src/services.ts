@@ -1,12 +1,15 @@
 import { AiGateway } from './ai-gateway/gateway.js';
 import { CompileService } from './compiler/compile-service.js';
+import { BatchQueue } from './pipeline/batch-queue.js';
 import { ExtractionService } from './pipeline/extraction-service.js';
+import { RawIngestor } from './pipeline/raw-ingestor.js';
 import { AiVaultRepository } from './vault/ai-vault-repository.js';
+import { RawDocumentRepository } from './vault/raw-repository.js';
 import { RunPartRepository } from './vault/run-part-repository.js';
 import { RunSeriesRepository } from './vault/run-series-repository.js';
 import { initializeVault, type VaultServices } from './vault/vault-initializer.js';
 
-/** Alle beim Serverstart initialisierten Dienste inkl. KI-Gateway + Compiler. */
+/** Alle beim Serverstart initialisierten Dienste. */
 export interface AppServices extends VaultServices {
   aiVault: AiVaultRepository;
   aiGateway: AiGateway;
@@ -14,6 +17,9 @@ export interface AppServices extends VaultServices {
   runSeries: RunSeriesRepository;
   compileService: CompileService;
   extractionService: ExtractionService;
+  rawRepo: RawDocumentRepository;
+  rawIngestor: RawIngestor;
+  batchQueue: BatchQueue;
 }
 
 /**
@@ -42,6 +48,9 @@ export function initializeServices(): AppServices {
     aiVault,
     aiGateway,
   );
+  const rawRepo = new RawDocumentRepository(vault.globalDb);
+  const rawIngestor = new RawIngestor(vault.paths, rawRepo);
+  const batchQueue = new BatchQueue({ concurrency: 5 });
 
   return {
     ...vault,
@@ -51,5 +60,8 @@ export function initializeServices(): AppServices {
     runSeries,
     compileService,
     extractionService,
+    rawRepo,
+    rawIngestor,
+    batchQueue,
   };
 }
