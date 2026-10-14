@@ -21,7 +21,7 @@ Um die Hauptapplikation **Descriptio** frei von Scraping-Overhead, unfertigen St
 3. **Zero-Git-Leak Security (Out-of-Repo Vault):**  
    API-Keys, Provider-Konfigurationen und lokale Datenbanken liegen **niemals** im Git-Projektverzeichnis, sondern zwingend außerhalb des Repositories im Betriebssystem-Benutzerverzeichnis (`~/.descriptio-forge/`).
 4. **Flattening vor dem Export:**  
-   Descriptio Forge löst alle Vererbungen (Baureihe → Artikel) und Heuristiken vor dem Export auf. Das ausgegebene JSON-Paket ist flach, vollständig typisiert und direkt in Descriptio importierbar.
+   Descriptio Forge löst alle Vererbungen (Baureihe -> Artikel) und Heuristiken vor dem Export auf. Das ausgegebene JSON-Paket ist flach, vollständig typisiert und direkt in Descriptio importierbar.
 
 ---
 
@@ -52,7 +52,7 @@ Jeder Durchlauf („Run“) ist eine eigenständige SQLite-Datei im Ordner `~/.d
 * **Inhalt eines Runs:** Artikel-Liste (`staged_parts`), KI-Roh-Outputs (`ai_extractions`), Baureihen-Regeln (`series_overrides`), kompilierte Pins (`compiled_pins`), Funktionsgruppen (`compiled_function_groups`) und Validierungs-Status (`validation_logs`).
 * **Kern-Operationen im UI:**
   1. **Neuer Run (Empty / Aus Artikelnummern-Liste):** Startet auf der grünen Wiese.
-  2. **Run klonen / Branch erstellen (`Fork Run`):** Kopiert die aktuelle `.sqlite`-Datei per `better-sqlite3` Backup-API in unter 50 ms (z. B. `Run #04 Eaton Basis` → `Run #05 Test mit DeepSeek-V3`).
+  2. **Run klonen / Branch erstellen (`Fork Run`):** Kopiert die aktuelle `.sqlite`-Datei per `better-sqlite3` Backup-API in unter 50 ms (z. B. `Run #04 Eaton Basis` -> `Run #05 Test mit DeepSeek-V3`).
   3. **Snapshot einfrieren (`Lock / Archive`):** Setzt einen Run auf `READ_ONLY`, damit ein erfolgreicher Stand (z. B. „Weidmüller Reihenklemmen v1.0 – Fertig exportiert“) niemals versehentlich überschrieben wird.
   4. **Run-Diffing:** Vergleicht zwei Runs tabellarisch (z. B. *„Was hat Prompt V2 im Vergleich zu Prompt V1 bei 50 Eaton-Schützen verändert?“*).
 
@@ -75,7 +75,7 @@ Das KI-Gateway abstrahiert verschiedene Anbieter über ein einheitliches Interfa
 4. **OpenAI-Kompatible Endpoints (Universal-Adapter):**
    * **OpenRouter:** Zugriff auf hunderte Modelle über einen Key.
    * **DeepSeek API:** Extrem kostengünstige Text-/HTML-Extraktion.
-   * **Lokale Modelle (Ollama / LM Studio / vLLM):** `http://localhost:11434/v1` für 0,00 € Kosten bei großen Vorfilter-Läufen.
+   * **Lokale Modelle (Ollama / LM Studio / vLLM):** `http://localhost:11434/v1` für 0,00 EUR Kosten bei großen Vorfilter-Läufen.
 
 ### 4.3 Pflichtfunktionen im KI-Provider-Manager (UI & Backend)
 * **Live-Verbindungstest (`Test Connection` Button):**  
@@ -126,46 +126,45 @@ Obwohl der grafische Symbol-Designer erst in einer späteren Ausbaustufe impleme
 
 ## 7. Verzeichnisstruktur (Repo vs. Lokales System)
 
-~~~text
-# 1. AUSSERHALB DES GIT-REPOS (Lokales OS-User-Verzeichnis: ~/.descriptio-forge/)
-~/.descriptio-forge/
-├── credentials.json                 # Geheime API-Keys (NIEMALS im Git!)
-├── global-vault.sqlite              # Globaler HTML/PDF-Cache, KI-Modelle, Archetypen, Symbole
-├── raw-cache/                       # Heruntergeladene PDFs & HTML-Snapshots (nach SHA256)
-├── runs/                            # Isolierte SQLite-Datenbanken pro Durchlauf
-│   ├── run_001_eaton_dilm_v1.sqlite
-│   ├── run_002_eaton_dilm_v2_fork.sqlite
-│   └── run_003_weidmueller_wdu.sqlite
-└── exports/                         # Fertige .descriptio.json Pakete für den Import
+    # 1. AUSSERHALB DES GIT-REPOS (Lokales OS-User-Verzeichnis: ~/.descriptio-forge/)
+    ~/.descriptio-forge/
+    ├── credentials.json                 # Geheime API-Keys (NIEMALS im Git!)
+    ├── global-vault.sqlite              # Globaler HTML/PDF-Cache, KI-Modelle, Archetypen, Symbole
+    ├── raw-cache/                       # Heruntergeladene PDFs & HTML-Snapshots (nach SHA256)
+    ├── runs/                            # Isolierte SQLite-Datenbanken pro Durchlauf
+    │   ├── run_001_eaton_dilm_v1.sqlite
+    │   ├── run_002_eaton_dilm_v2_fork.sqlite
+    │   └── run_003_weidmueller_wdu.sqlite
+    └── exports/                         # Fertige .descriptio.json Pakete für den Import
 
-# 2. INNERHALB DES GITHUB-REPOS (descriptio-forge/)
-descriptio-forge/
-├── MANIFEST.md                      # Dieses Dokument (Architektur & UI-Stilguide)
-├── package.json                     # Workspaces (apps/server, apps/web, packages/shared)
-├── packages/
-│   └── shared/                      # Geteilte Zod-Schemata (Descriptio Export, Archetypen, KI-Schemas)
-├── apps/
-│   ├── server/                      # Node.js + Fastify + tRPC + better-sqlite3
-│   │   └── src/
-│   │       ├── vault/               # Zugriff auf ~/.descriptio-forge/ & Run-Cloner
-│   │       ├── ai-gateway/          # Multi-Provider-Adapter, Connection-Tester, Model-Fetcher
-│   │       ├── scraper/             # Playwright / Cheerio / PDF-Ingestion
-│   │       ├── compiler/            # Deterministischer Archetyp-, Serien- & Geometrie-Compiler
-│   │       ├── symbol-engine/       # [Platzhalter Phase 2] KI-SVG-Generator & Pin-Snapper
-│   │       └── exporter/            # Generator für .descriptio.json Pakete
-│   └── web/                         # React + Vite + Tailwind + TanStack Table (24px Industrie-UI)
-│       └── src/
-│           ├── components/
-│           │   ├── tree/            # HighDensityTreeGrid.tsx (24px Standard)
-│           │   ├── hover/           # IndustrialHoverCard.tsx (600ms Delay)
-│           │   └── inspector/       # 24px Property-Grid Inspector
-│           └── views/
-│               ├── RunManagerView/  # Durchläufe verwalten, klonen, vergleichen
-│               ├── HarvestGridView/ # Haupttabelle (20.000 Artikel, Tree: Serie -> Artikel -> Pins)
-│               ├── ArchetypeView/   # IEC-Archetypen & Baureihen-Vererbung pflegen
-│               ├── AiVaultView/     # Provider, API-Test, Modell-Sync & Kosten-Kontrolle
-│               └── SymbolStudioView/# [Vorbereitet für Phase 2] Symbol-Designer & KI-Batch
-~~~
+    # 2. INNERHALB DES GITHUB-REPOS (descriptio-forge/)
+    descriptio-forge/
+    ├── MANIFEST.md                      # Dieses Dokument (Architektur & UI-Stilguide)
+    ├── AGENT_PLAN.md                    # Detaillierter Implementierungsplan für den Agenten
+    ├── package.json                     # Workspaces (apps/server, apps/web, packages/shared)
+    ├── packages/
+    │   └── shared/                      # Geteilte Zod-Schemata (Descriptio Export, Archetypen, KI-Schemas)
+    ├── apps/
+    │   ├── server/                      # Node.js + Fastify + tRPC + better-sqlite3
+    │   │   └── src/
+    │   │       ├── vault/               # Zugriff auf ~/.descriptio-forge/ & Run-Cloner
+    │   │       ├── ai-gateway/          # Multi-Provider-Adapter, Connection-Tester, Model-Fetcher
+    │   │       ├── scraper/             # Playwright / Cheerio / PDF-Ingestion
+    │   │       ├── compiler/            # Deterministischer Archetyp-, Serien- & Geometrie-Compiler
+    │   │       ├── symbol-engine/       # [Platzhalter Phase 2] KI-SVG-Generator & Pin-Snapper
+    │   │       └── exporter/            # Generator für .descriptio.json Pakete
+    │   └── web/                         # React + Vite + Tailwind + TanStack Table (24px Industrie-UI)
+    │       └── src/
+    │           ├── components/
+    │           │   ├── tree/            # HighDensityTreeGrid.tsx (24px Standard)
+    │           │   ├── hover/           # IndustrialHoverCard.tsx (600ms Delay)
+    │           │   └── inspector/       # 24px Property-Grid Inspector
+    │           └── views/
+    │               ├── RunManagerView/  # Durchläufe verwalten, klonen, vergleichen
+    │               ├── HarvestGridView/ # Haupttabelle (20.000 Artikel, Tree: Serie -> Artikel -> Pins)
+    │               ├── ArchetypeView/   # IEC-Archetypen & Baureihen-Vererbung pflegen
+    │               ├── AiVaultView/     # Provider, API-Test, Modell-Sync & Kosten-Kontrolle
+    │               └── SymbolStudioView/# [Vorbereitet für Phase 2] Symbol-Designer & KI-Batch
 
 ---
 
@@ -185,7 +184,7 @@ In professioneller Engineering- und Datenaufbereitungs-Software steht **die effi
 1. **Maximale Datendichte ("Zero Waste"):**  
    Jeder vertikale Pixel zählt. Zeilenhöhen sind strikt auf **24px** standardisiert, sodass 30–50 Datensätze (Artikel, Funktionsgruppen, Pins, KI-Modelle) ohne Scrollen auf einen Blick erfassbar sind.
 2. **Visuelle Führung durch Führungslinien statt Leerraum:**  
-   Verschachtelungen (`Baureihe → Artikel → Funktionsgruppe → Pin`) werden nicht durch riesige Einrückungen verdeutlicht, sondern durch feine, ununterbrochene L-Führungslinien (Windows Explorer / STEP-CAD-Standard).
+   Verschachtelungen (`Baureihe -> Artikel -> Funktionsgruppe -> Pin`) werden nicht durch riesige Einrückungen verdeutlicht, sondern durch feine, ununterbrochene L-Führungslinien (Windows Explorer / STEP-CAD-Standard).
 3. **Status-Spalte ganz links (`w-[28px]`):**  
    Eine sehr schmale Spalte (28px) ohne Spaltentitel zeigt ausschließlich kompakte Status-Icons (z. B. Rohdaten geladen, KI extrahiert, Kompiliert, Validierungsfehler) zentriert an.
 4. **Excel-Gitternetz:**  
@@ -224,7 +223,7 @@ In professioneller Engineering- und Datenaufbereitungs-Software steht **die effi
 
 ## 3. Die L-förmigen Führungslinien (Hierarchie-Regeln)
 
-Verschachtelte Hierarchien (`Baureihe → Artikel → Funktionsgruppe → Pin`) müssen optisch mit durchgehenden vertikalen und horizontalen Linien verbunden werden.
+Verschachtelte Hierarchien (`Baureihe -> Artikel -> Funktionsgruppe -> Pin`) müssen optisch mit durchgehenden vertikalen und horizontalen Linien verbunden werden.
 
 ### Technische Umsetzung (rein mit Tailwind CSS & absoluter Positionierung):
 - **Abstand / Versatz:** Jede Hierarchieebene rückt um genau `16px` ein (in reinen schmalen Sidebars `12px`).
@@ -234,15 +233,15 @@ Verschachtelte Hierarchien (`Baureihe → Artikel → Funktionsgruppe → Pin`) 
   `absolute left-[7px] top-[12px] w-[8px] h-px bg-slate-300 dark:bg-slate-700`
 - **Wichtigste Regel (Letztes Kind-Element):**  
   Beim letzten Kind-Element einer Ebene darf die vertikale Linie nicht nach unten durchlaufen, sondern muss exakt beim horizontalen Abzweig enden (`h-[12px]` statt `h-full`):
-~~~tsx
-{/* isLastChild: Linie endet bei 12px (Mitte der Zeile) statt h-full */}
-<div
-  className={`absolute left-[7px] top-0 w-px bg-slate-300 dark:bg-slate-700 ${
-    isLastChild ? 'h-[12px]' : 'h-full'
-  }`}
-/>
-<div className="absolute left-[7px] top-[12px] w-[8px] h-px bg-slate-300 dark:bg-slate-700" />
-~~~
+
+    {/* isLastChild: Linie endet bei 12px (Mitte der Zeile) statt h-full */}
+    <div
+      className={`absolute left-[7px] top-0 w-px bg-slate-300 dark:bg-slate-700 ${
+        isLastChild ? 'h-[12px]' : 'h-full'
+      }`}
+    />
+    <div className="absolute left-[7px] top-[12px] w-[8px] h-px bg-slate-300 dark:bg-slate-700" />
+
 - **Endknoten ohne Kinder:**  
   Erhalten **kein** Plus/Minus-Icon, sondern an dieser Stelle einen horizontalen Strich (`w-3.5 h-px`), der die L-Linie sauber bis zum Typ-Icon weiterführt.
 
@@ -259,7 +258,7 @@ Für alle datenreichen Ansichten in Descriptio Forge (Harvest-Grid, Baureihen-Ba
      Ohne Titel, zentrierte Status-Icons (`FileDown` für Rohdaten fehlen, `FileText` für gecacht, `Sparkles` für KI-extrahiert, `Cpu` für kompiliert, `CheckCircle2` für validiert, `AlertCircle` für Fehler).
    - **Optionale Checkbox-Spalte (Mehrfachauswahl):**  
      `w-[28px]`, Checkbox zentriert für Batch-Aktionen (z. B. *"500 ausgewählte Artikel durch KI extrahieren"*).
-   - **Spalte 1: Hierarchie / Kennzeichnung (Baureihe → Artikel-Nr. → Funktionsgruppe → Pin):**  
+   - **Spalte 1: Hierarchie / Kennzeichnung (Baureihe -> Artikel-Nr. -> Funktionsgruppe -> Pin):**  
      Enthält die Einrückung (`row.depth * 16px`), die L-Führungslinien, den Expand-Toggle (`PlusSquare`/`MinusSquare`), das semantische Lucide-Typ-Icon und den Text.
    - **Mittlere Spalten: Fachliche Beschreibungen & Stammdaten:**  
      Linksbündig (`text-left`), mit `truncate`.
@@ -269,17 +268,16 @@ Für alle datenreichen Ansichten in Descriptio Forge (Harvest-Grid, Baureihen-Ba
      Rechtsbündig (`text-right`), zwingend mit `tabular-nums font-mono`.
 
 2. **TanStack Table Konfiguration:**
-~~~tsx
-const table = useReactTable({
-  data,
-  columns: finalColumns, // status column + checkbox column + data columns
-  state: { expanded },
-  onExpandedChange: setExpanded,
-  getSubRows: (row) => row.subItems || row.children,
-  getCoreRowModel: getCoreRowModel(),
-  getExpandedRowModel: getExpandedRowModel(),
-});
-~~~
+
+    const table = useReactTable({
+      data,
+      columns: finalColumns, // status column + checkbox column + data columns
+      state: { expanded },
+      onExpandedChange: setExpanded,
+      getSubRows: (row) => row.subItems || row.children,
+      getCoreRowModel: getCoreRowModel(),
+      getExpandedRowModel: getExpandedRowModel(),
+    });
 
 3. **Performance & Skalierung:**
    - **Eingeklappt zum Start (`defaultExpanded: false`):** Verhindert lange Ladezeiten bei 20.000 Artikeln.
@@ -296,41 +294,39 @@ Für die schnelle Korrektur von extrahierten Werten (z. B. Drehmoment nachtragen
 Zudem setzt jede manuelle Änderung automatisch das Flag `isManuallyCurated = true` (angezeigt durch ein kleines `Lock`-Icon), damit spätere KI- oder Compiler-Läufe diesen Wert niemals überschreiben.
 
 ### Standards für Inline-Inputs:
-~~~tsx
-{/* Text-Input innerhalb einer 24px Tabellenzelle */}
-<input
-  type="text"
-  defaultValue={value}
-  autoFocus
-  className="w-full h-[22px] px-1 -my-0.5 bg-white dark:bg-slate-800 border border-blue-500 rounded-none text-[12px] text-slate-800 dark:text-slate-100 font-sans outline-none ring-1 ring-blue-500"
-  onKeyDown={(e) => {
-    if (e.key === 'Enter') handleSave();
-    if (e.key === 'Escape') handleCancel();
-  }}
-/>
-~~~
+
+    {/* Text-Input innerhalb einer 24px Tabellenzelle */}
+    <input
+      type="text"
+      defaultValue={value}
+      autoFocus
+      className="w-full h-[22px] px-1 -my-0.5 bg-white dark:bg-slate-800 border border-blue-500 rounded-none text-[12px] text-slate-800 dark:text-slate-100 font-sans outline-none ring-1 ring-blue-500"
+      onKeyDown={(e) => {
+        if (e.key === 'Enter') handleSave();
+        if (e.key === 'Escape') handleCancel();
+      }}
+    />
 
 ### Standards für Inline-Dropdowns (Select):
-~~~tsx
-{/* Select-Feld innerhalb einer 24px Tabellenzelle */}
-<select
-  defaultValue={value}
-  autoFocus
-  className="w-full h-[22px] px-1 -my-0.5 bg-white dark:bg-slate-800 border border-blue-500 rounded-none text-[12px] text-slate-800 dark:text-slate-100 outline-none cursor-pointer"
-  onChange={(e) => handleSave(e.target.value)}
-  onBlur={handleCancel}
->
-  <option value="CONTACTOR_3P_1NO">Schütz 3P + 1S</option>
-  <option value="CONTACTOR_3P_1NC">Schütz 3P + 1Ö</option>
-  <option value="MCB_1P">LS-Schalter 1P</option>
-</select>
-~~~
+
+    {/* Select-Feld innerhalb einer 24px Tabellenzelle */}
+    <select
+      defaultValue={value}
+      autoFocus
+      className="w-full h-[22px] px-1 -my-0.5 bg-white dark:bg-slate-800 border border-blue-500 rounded-none text-[12px] text-slate-800 dark:text-slate-100 outline-none cursor-pointer"
+      onChange={(e) => handleSave(e.target.value)}
+      onBlur={handleCancel}
+    >
+      <option value="CONTACTOR_3P_1NO">Schütz 3P + 1S</option>
+      <option value="CONTACTOR_3P_1NC">Schütz 3P + 1Ö</option>
+      <option value="MCB_1P">LS-Schalter 1P</option>
+    </select>
 
 ### Tastatur-Verhalten beim Inline-Editing:
 - **`Doppelklick` oder `F2` oder `Enter`:** Startet die Bearbeitung der selektierten Zelle.
-- **`Enter`:** Speichert den Wert, setzt `isManuallyCurated = true` und springt optional zur nächsten Zeile (`↓`).
-- **`Tab`:** Speichert den Wert und springt zur nächsten editierbaren Zelle derselben Zeile (`→`).
-- **`Shift + Tab`:** Speichert den Wert und springt zur vorherigen editierbaren Zelle (`←`).
+- **`Enter`:** Speichert den Wert, setzt `isManuallyCurated = true` und springt optional zur nächsten Zeile (`ArrowDown`).
+- **`Tab`:** Speichert den Wert und springt zur nächsten editierbaren Zelle derselben Zeile (`ArrowRight`).
+- **`Shift + Tab`:** Speichert den Wert und springt zur vorherigen editierbaren Zelle (`ArrowLeft`).
 - **`Escape`:** Bricht die Bearbeitung ab und stellt den ursprünglichen Wert wieder her.
 
 ---
@@ -341,10 +337,10 @@ Jedes TreeGrid in Descriptio Forge muss folgende Tastaturnavigation unterstütze
 
 | Taste | Aktion im TreeGrid / in der Tabelle |
 | :--- | :--- |
-| `↑` (Pfeil hoch) | Selektiert die vorherige Zeile |
-| `↓` (Pfeil runter) | Selektiert die nächste Zeile |
-| `→` (Pfeil rechts) | Auf geklapptem Knoten: Klappt den Knoten auf. Auf offenem Knoten: Springt zum ersten Kind |
-| `←` (Pfeil links) | Auf offenem Knoten: Klappt den Knoten zu. Auf geschlossenem Knoten: Springt zum Parent-Knoten |
+| `ArrowUp` (Pfeil hoch) | Selektiert die vorherige Zeile |
+| `ArrowDown` (Pfeil runter) | Selektiert die nächste Zeile |
+| `ArrowRight` (Pfeil rechts) | Auf geklapptem Knoten: Klappt den Knoten auf. Auf offenem Knoten: Springt zum ersten Kind |
+| `ArrowLeft` (Pfeil links) | Auf offenem Knoten: Klappt den Knoten zu. Auf geschlossenem Knoten: Springt zum Parent-Knoten |
 | `Leertaste` | Schaltet die Checkbox der aktuellen Zeile um (Mehrfachauswahl für Batch-Lauf) |
 | `Enter` / `F2` | Startet das Inline-Editing der fokussierten Zelle |
 | `Strg + A` | Wählt alle aktuell sichtbaren / gefilterten Zeilen aus |
@@ -393,28 +389,26 @@ Um zwischen **Fokus für den rechten Detail-/PDF-Inspektor** und **Batch-Aktione
 
 Ein Rechtsklick auf eine beliebige Tabellen- oder Tree-Zeile öffnet ein kompaktes Kontextmenü im IDE-Stil:
 
-~~~tsx
-{/* Standard Industrie-Kontextmenü in Descriptio Forge */}
-<div className="fixed z-50 min-w-[200px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-md py-1 text-[12px] font-sans">
-  <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 transition-colors text-left">
-    <Sparkles className="w-3.5 h-3.5 text-indigo-500"/>
-    <span>Mit KI neu extrahieren...</span>
-  </button>
-  <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 transition-colors text-left">
-    <Cpu className="w-3.5 h-3.5 text-amber-500"/>
-    <span>Regel-Compiler ausführen</span>
-  </button>
-  <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 transition-colors text-left">
-    <FileText className="w-3.5 h-3.5 text-slate-500"/>
-    <span>Rohdaten-PDF im Inspector öffnen</span>
-  </button>
-  <div className="my-1 h-px bg-slate-200 dark:bg-slate-800" />
-  <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 transition-colors text-left">
-    <Trash2 className="w-3.5 h-3.5 text-rose-500"/>
-    <span>Aus aktuellem Run entfernen</span>
-  </button>
-</div>
-~~~
+    {/* Standard Industrie-Kontextmenü in Descriptio Forge */}
+    <div className="fixed z-50 min-w-[200px] bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded shadow-md py-1 text-[12px] font-sans">
+      <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 transition-colors text-left">
+        <Sparkles className="w-3.5 h-3.5 text-indigo-500" />
+        <span>Mit KI neu extrahieren...</span>
+      </button>
+      <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 transition-colors text-left">
+        <Cpu className="w-3.5 h-3.5 text-amber-500" />
+        <span>Regel-Compiler ausführen</span>
+      </button>
+      <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-blue-50 dark:hover:bg-blue-950/50 hover:text-blue-600 transition-colors text-left">
+        <FileText className="w-3.5 h-3.5 text-slate-500" />
+        <span>Rohdaten-PDF im Inspector öffnen</span>
+      </button>
+      <div className="my-1 h-px bg-slate-200 dark:bg-slate-800" />
+      <button className="w-full h-[24px] px-2.5 flex items-center gap-2 hover:bg-rose-50 dark:hover:bg-rose-950/50 text-rose-600 transition-colors text-left">
+        <Trash2 className="w-3.5 h-3.5 text-rose-500" />
+        <span>Aus aktuellem Run entfernen</span>
+      </button>
+    </div>
 
 - **Höhe pro Menüeintrag:** Exakt `h-[24px]` mit `text-[12px]`.
 - **Icons im Menü:** Einheitlich `w-3.5 h-3.5`.
@@ -525,7 +519,7 @@ Um in datendichten Bäumen und Tabellen maximale Arbeitsruhe zu garantieren, dü
 
 Die Umsetzung von Descriptio Forge erfolgt modular in 5 Phasen:
 
-### Phase 1: Fundament, Run-Vault & KI-Provider-Tresor (Höchste Priorität 🚀)
+### Phase 1: Fundament, Run-Vault & KI-Provider-Tresor (Höchste Priorität)
 1. **Out-of-Repo Vault (`~/.descriptio-forge/`):**
    - Lese-/Schreibzugriff auf `credentials.json` außerhalb des Git-Ordners.
    - Verwaltung von `global-vault.sqlite` und dem `runs/`-Verzeichnis.
@@ -536,7 +530,7 @@ Die Umsetzung von Descriptio Forge erfolgt modular in 5 Phasen:
 3. **Run-Manager & Snapshot-Cloner (`RunManagerView.tsx`):**
    - Erstellen, Klonen (`Fork`), Sperren (`Lock`) und Löschen von Durchlauf-Datenbanken (`.sqlite`).
 
-### Phase 2: IEC-Archetypen, Baureihen-Studio & Deterministischer Compiler (⚙️)
+### Phase 2: IEC-Archetypen, Baureihen-Studio & Deterministischer Compiler
 1. **Geteilte Zod-Schemata (`packages/shared`):**
    - Exakte Definition von `CatalogPartVersion`, `CatalogFunctionGroup`, `CatalogPin`, `PartAccessoryRelation` und `CatalogCableSpec`.
 2. **Archetypen- & Serien-Editor (`ArchetypeView.tsx`):**
@@ -545,7 +539,7 @@ Die Umsetzung von Descriptio Forge erfolgt modular in 5 Phasen:
 3. **Regel-Compiler (`apps/server/src/compiler`):**
    - Deterministisches Zusammenführen von KI-Extrakt + Archetyp + Baureihe + 3D-Geometrie-Heuristik.
 
-### Phase 3: Scraper, KI-Batch-Pipeline & Harvest-Grid (📦)
+### Phase 3: Scraper, KI-Batch-Pipeline & Harvest-Grid
 1. **Rohdaten-Ingestor (`apps/server/src/scraper`):**
    - HTML/ETIM-Tabellen-Parser und PDF-Caching in `raw-cache/`.
 2. **KI-Extraktions-Queue:**
@@ -553,13 +547,13 @@ Die Umsetzung von Descriptio Forge erfolgt modular in 5 Phasen:
 3. **Harvest-Haupttabelle (`HarvestGridView.tsx`) & Dual-Inspector:**
    - Virtualisiertes 24px-TreeGrid für 20.000+ Artikel mit Herkunfts-Badges (`AI`, `SER`, `ARC`, `HEU`, `MAN`), Inline-Editing und PDF/HTML-Beweis-Viewer im rechten Inspector.
 
-### Phase 4: Run-Diffing & Descriptio-Paket-Exporter (📤)
+### Phase 4: Run-Diffing & Descriptio-Paket-Exporter
 1. **Run-Diff-Ansicht (`RunDiffView.tsx`):**
    - 24px-Vergleichstabelle zwischen zwei Runs (zeigt geänderte Felder nach Prompt- oder Regel-Anpassungen).
 2. **Exporter (`apps/server/src/exporter`):**
    - Generiert flache, vollständig validierte `.descriptio.json`-Pakete inkl. `importHash` für den Import in die Hauptapplikation.
 
-### Phase 5: Symbol-Designer & KI-Symbol-Batching (Spätere Ausbaustufe 🎨)
+### Phase 5: Symbol-Designer & KI-Symbol-Batching (Spätere Ausbaustufe)
 1. **Grafischer IEC 60617 SVG-Editor (`SymbolStudioView.tsx`):**
    - 4mm/8mm Raster-Canvas, Pin-Platzierung und Validierung gegen `CatalogFunctionGroup`.
 2. **KI-Symbol-Synthese:**

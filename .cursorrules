@@ -1,0 +1,43 @@
+# .cursorrules — Descriptio Forge
+
+Projekt: Descriptio Forge (Catalog Harvester, Rule Compiler & Symbol Batch Studio).
+
+Verbindliche Spezifikationen (immer zuerst lesen):
+- docs/MANIFEST.md  -> Systemarchitektur & 24px Industrie-UI-Stilguide
+- docs/AGENT_PLAN.md -> Implementierungsplan, SQLite-DDL & Ablaeufe
+
+## Die 4 eisernen Arbeitsregeln
+
+1. IMMER VOLLSTAENDIGE DATEIEN
+   Niemals Code-Fragmente oder Platzhalter wie "// ... rest of code" oder "// TODO".
+   Jede Datei immer komplett und direkt kompilierbar liefern.
+
+2. KLEINE, MODULARE DATEIEN
+   Maximal 200-250 Zeilen pro Datei. Logik strikt nach Verantwortlichkeit trennen
+   (ein Adapter pro KI-Provider, ein Modul pro Compiler-Stufe, eigene Sub-Komponenten
+   fuer Toolbar, Header, Row, Inspector). Keine monolithischen Riesendateien.
+
+3. OUT-OF-REPO SECURITY
+   API-Keys (credentials.json), Rohdaten-Caches und SQLite-Datenbanken NIEMALS im
+   Git-Repo. Immer ueber os.homedir() unter ~/.descriptio-forge/ ablegen.
+   Unterordner: raw-cache/, runs/, exports/. Keine .env mit echten Keys im Repo.
+
+4. 24px INDUSTRIE-LOOK (Frontend)
+   Ausnahmslos Teil 2 der docs/MANIFEST.md befolgen:
+   - Zeilenhoehe strikt h-[24px] min-h-[24px] max-h-[24px]
+   - Excel-Gitternetz border-r border-b border-slate-200 dark:border-slate-800
+   - L-Fuehrungslinien: isLastChild ? 'h-[12px]' : 'h-full'
+   - Toggles PlusSquare / MinusSquare (w-3.5 h-3.5)
+   - Zahlen: text-right tabular-nums font-mono text-[13px]
+   - Status-Spalte w-[28px], Checkbox-Spalte w-[28px], Zellen px-2 py-0
+   - Hoverkarten mit INDUSTRIAL_HOVER_DELAY_MS = 600, Lazy Loading
+
+## Arbeitsweise
+Sequenziell nach Meilensteinen M1-M7 aus docs/AGENT_PLAN.md. Nach jedem Meilenstein
+muss der TypeScript-Build fehlerfrei laufen, bevor der naechste Schritt beginnt.
+Build- und Typfehler selbststaendig beheben.
+
+## Stack
+Node.js (ESM), TypeScript, Fastify + tRPC, better-sqlite3, Playwright/Cheerio, Zod,
+React 18 + Vite + Tailwind + TanStack Table v8/Virtual, Lucide React.
+Monorepo: packages/shared, apps/server, apps/web.
