@@ -1,5 +1,6 @@
-import type { CatalogFunctionGroup, CatalogPin } from '@descriptio-forge/shared';
+import type { AiExtractionOutput } from '@descriptio-forge/shared';
 import type { RunManager } from './run-manager.js';
+import { toGroupParams, toPinParams } from './run-compiled-mappers.js';
 import {
   toStagedPart,
   type CompiledSaveInput,
@@ -143,46 +144,67 @@ export class RunPartRepository {
       .get() as { total: number; validated: number | null };
     return { total: row.total, validated: row.validated ?? 0 };
   }
-}
 
-function toGroupParams(partId: string, group: CatalogFunctionGroup): Record<string, unknown> {
-  return {
-    id: group.id,
-    partId,
-    groupKey: group.groupKey,
-    functionType: group.functionType,
-    symbolDefinitionId: group.symbolDefinitionId,
-    potentialPropagation: group.potentialPropagation,
-    isPositivelyDriven: group.isPositivelyDriven ? 1 : 0,
-    originSource: group.originSource,
-  };
-}
+  /** Speichert das Ergebnis der KI-Faktorenextraktion (Stufe 2). */
+  saveExtraction(
+    runId: string,
+    partId: string,
+    data: AiExtractionOutput,
+    modelUsed: string,
+    costUsd: number,
+  ): void {
+    this.runManager
+      .getRunDb(runId)
+      .prepare(
+        `UPDATE staged_parts SET
+           ai_raw_json = @ai,
+           ai_model_used = @model,
+           ai_cost_usd = @cost,
+           archetype_id = COALESCE(@archetypeId, archetype_id),
+           pipeline_status = 'AI_EXTRACTED',
+           validation_errors_json = '[]',
+           updated_at = @now
+         WHERE id = @partId`,
+      )
+      .run({
+        ai: JSON.stringify(data),
+        model: modelUsed,
+        cost: costUsd,
+        archetypeId: data.archetypeId,
+        now: new Date().toISOString(),
+        partId,
+      });
+  }
 
-function toPinParams(partId: string, pin: CatalogPin): Record<string, unknown> {
-  return {
-    id: pin.id,
-    partId,
-    functionGroupId: pin.functionGroupId,
-    pinName: pin.pinName,
-    contactType: pin.contactType,
-    electricalRole: pin.electricalRole,
-    voltageType: pin.voltageType,
-    nominalVoltage: pin.nominalVoltage,
-    minVoltage: pin.minVoltage,
-    maxVoltage: pin.maxVoltage,
-    maxCurrent: pin.maxCurrent,
-    minCrossSec: pin.minCrossSec,
-    maxCrossSec: pin.maxCrossSec,
-    maxCrossSecTwin: pin.maxCrossSecTwin,
-    maxConnections: pin.maxConnections,
-    connectionType: pin.connectionType,
-    strippingLengthMm: pin.strippingLengthMm,
-    torqueNm: pin.torqueNm,
-    physicalOffsetX: pin.physicalOffsetX,
-    physicalOffsetY: pin.physicalOffsetY,
-    physicalOffsetZ: pin.physicalOffsetZ,
-    wireEntryDirection: pin.wireEntryDirection,
-    isHeuristicGeometry: pin.isHeuristicGeometry ? 1 : 0,
-    fieldOrigins: JSON.stringify(pin.fieldOrigins),
-  };
+  /** Setzt einen manuell fixierten Feldwert (Schreibschutz, MAN). */
+  setManualOverride(runId: string, partId: string, field: string, value: unknown): void {
+    const part = this.requirePart(runId, partId);
+    this.writeOverrides(runId, partId, { ...part.manualOverrides, [field]: value });
+  }
+
+  /** Entfernt einen manuell fixierten Feldwert (entsperrt das Feld wieder). */
+  clearManualOverride(runId: string, partId: string, field: string): void {
+    const part = this.requirePart(runId, partId);
+    const next = { ...part.manualOverrides };
+    delete next[field];
+    this.writeOverrides(runId, partId, next);
+  }
+
+  /** Entfernt einen Artikel aus dem Run. */
+  deletePart(runId: string, partId: string): void {
+    this.runManager.getRunDb(runId).prepare('DELETE FROM staged_parts WHERE id = ?').run(partId);
+  }
+
+  private writeOverrides(runId: string, partId: string, overrides: Record<string, unknown>): void {
+    this.runManager
+      .getRunDb(runId)
+      .prepare('UPDATE staged_parts SET manual_overrides_json = ?, updated_at = ? WHERE id = ?')
+      .run(JSON.stringify(overrides), new Date().toISOString(), partId);
+  }
+
+  private requirePart(runId: string, partId: string): StagedPart {
+    const part = this.getPart(runId, partId);
+    if (!part) throw new Error(`Artikel ${partId} existiert nicht im Run ${runId}.`);
+    return part;
+  }
 }

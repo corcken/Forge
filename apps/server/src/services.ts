@@ -1,5 +1,6 @@
 import { AiGateway } from './ai-gateway/gateway.js';
 import { CompileService } from './compiler/compile-service.js';
+import { ExtractionService } from './pipeline/extraction-service.js';
 import { AiVaultRepository } from './vault/ai-vault-repository.js';
 import { RunPartRepository } from './vault/run-part-repository.js';
 import { RunSeriesRepository } from './vault/run-series-repository.js';
@@ -12,11 +13,13 @@ export interface AppServices extends VaultServices {
   runParts: RunPartRepository;
   runSeries: RunSeriesRepository;
   compileService: CompileService;
+  extractionService: ExtractionService;
 }
 
 /**
- * Bootstrapping der gesamten Anwendung: Vault (Out-of-Repo), KI-Gateway und
- * deterministischer Regel-Compiler. Standard-Provider werden idempotent angelegt.
+ * Bootstrapping der gesamten Anwendung: Vault (Out-of-Repo), KI-Gateway,
+ * deterministischer Regel-Compiler und Extraktions-Pipeline.
+ * Standard-Provider werden idempotent angelegt.
  */
 export function initializeServices(): AppServices {
   const vault = initializeVault();
@@ -33,6 +36,20 @@ export function initializeServices(): AppServices {
     runParts,
     runSeries,
   );
+  const extractionService = new ExtractionService(
+    vault.globalDb,
+    runParts,
+    aiVault,
+    aiGateway,
+  );
 
-  return { ...vault, aiVault, aiGateway, runParts, runSeries, compileService };
+  return {
+    ...vault,
+    aiVault,
+    aiGateway,
+    runParts,
+    runSeries,
+    compileService,
+    extractionService,
+  };
 }

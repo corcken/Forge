@@ -8,13 +8,12 @@ import {
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useEffect, useMemo, useRef, useState, type KeyboardEvent, type ReactNode } from 'react';
 import { ROW_HEIGHT_PX } from '../../lib/constants';
+import { readVisibility, writeVisibility } from './grid-storage';
 import { TreeGridHeader } from './TreeGridHeader';
 import { TreeGridRow } from './TreeGridRow';
 import { TreeGridToolbar } from './TreeGridToolbar';
 import type { TreeGridColumn, TreeGridRowContext, TreeGridRowData } from './types';
 import { useGridState } from './useGridState';
-
-const VIS_PREFIX = 'descriptio_forge_cols_';
 
 export interface HighDensityTreeGridProps<T extends TreeGridRowData> {
   data: T[];
@@ -30,6 +29,8 @@ export interface HighDensityTreeGridProps<T extends TreeGridRowData> {
   renderHoverCard?: (row: T) => ReactNode;
   toolbarRight?: ReactNode;
   footerRight?: ReactNode;
+  onActiveChange?: (id: string | null) => void;
+  onSelectionChange?: (ids: string[]) => void;
 }
 
 /**
@@ -52,6 +53,8 @@ export function HighDensityTreeGrid<T extends TreeGridRowData>({
   renderHoverCard,
   toolbarRight,
   footerRight,
+  onActiveChange,
+  onSelectionChange,
 }: HighDensityTreeGridProps<T>) {
   const grid = useGridState(storageKey, defaultExpanded);
   const [search, setSearch] = useState('');
@@ -104,6 +107,17 @@ export function HighDensityTreeGrid<T extends TreeGridRowData>({
   useEffect(() => {
     if (activeIndex >= 0) virtualizer.scrollToIndex(activeIndex, { align: 'auto' });
   }, [activeIndex, virtualizer]);
+
+  const activeChangeRef = useRef(onActiveChange);
+  activeChangeRef.current = onActiveChange;
+  const selectionChangeRef = useRef(onSelectionChange);
+  selectionChangeRef.current = onSelectionChange;
+  useEffect(() => {
+    activeChangeRef.current?.(grid.activeId);
+  }, [grid.activeId]);
+  useEffect(() => {
+    selectionChangeRef.current?.(Array.from(grid.selectedIds));
+  }, [grid.selectedIds]);
 
   const visibleColumns = columns.filter((column) => columnVisibility[column.id] !== false);
   const rowContext: TreeGridRowContext<T> = {
@@ -227,21 +241,4 @@ export function HighDensityTreeGrid<T extends TreeGridRowData>({
       </div>
     </div>
   );
-}
-
-function readVisibility(storageKey: string): Record<string, boolean> {
-  try {
-    const raw = localStorage.getItem(`${VIS_PREFIX}${storageKey}`);
-    return raw ? (JSON.parse(raw) as Record<string, boolean>) : {};
-  } catch {
-    return {};
-  }
-}
-
-function writeVisibility(storageKey: string, value: Record<string, boolean>): void {
-  try {
-    localStorage.setItem(`${VIS_PREFIX}${storageKey}`, JSON.stringify(value));
-  } catch {
-    /* localStorage optional */
-  }
 }

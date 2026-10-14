@@ -13,6 +13,27 @@ interface ArchetypeRow {
   updated_at: string;
 }
 
+/** Ein im globalen Rohdaten-Cache liegendes Dokument. */
+export interface RawDocumentRecord {
+  id: string;
+  manufacturer: string;
+  articleNr: string;
+  sourceType: string;
+  sourceUrl: string | null;
+  localFilePath: string | null;
+  extractedMarkdown: string | null;
+}
+
+interface RawDocumentRow {
+  id: string;
+  manufacturer: string;
+  article_nr: string;
+  source_type: string;
+  source_url: string | null;
+  local_file_path: string | null;
+  extracted_markdown: string | null;
+}
+
 /**
  * Verbindungs-Singleton fuer den globalen Tresor `global-vault.sqlite`.
  * Oeffnet die Datenbank im WAL-Modus, fuehrt alle Migrationen aus und seedet
@@ -84,6 +105,27 @@ export class GlobalVaultDb {
       | ArchetypeRow
       | undefined;
     return row ? fromArchetypeRow(row) : null;
+  }
+
+  /** Sucht im globalen Rohdaten-Cache (nie doppelt scrapen). */
+  findRawDocument(manufacturer: string, articleNr: string): RawDocumentRecord | null {
+    const row = this.db
+      .prepare(
+        `SELECT * FROM raw_documents
+          WHERE manufacturer = ? AND article_nr = ?
+          ORDER BY created_at DESC LIMIT 1`,
+      )
+      .get(manufacturer, articleNr) as RawDocumentRow | undefined;
+    if (!row) return null;
+    return {
+      id: row.id,
+      manufacturer: row.manufacturer,
+      articleNr: row.article_nr,
+      sourceType: row.source_type,
+      sourceUrl: row.source_url,
+      localFilePath: row.local_file_path,
+      extractedMarkdown: row.extracted_markdown,
+    };
   }
 
   /** Liest einen globalen Setting-Wert (z. B. aktiver Run). */

@@ -1,83 +1,121 @@
-import { Table2, Zap } from 'lucide-react';
-import { OriginBadge } from '../components/badges/OriginBadge';
+import { Cpu, Sparkles, Table2, Zap } from 'lucide-react';
+import { useMemo, useState, type ReactNode } from 'react';
 import { HighDensityTreeGrid } from '../components/tree/HighDensityTreeGrid';
-import type { TreeGridColumn } from '../components/tree/types';
-import { DEMO_HARVEST_TREE, type HarvestNode } from './harvest/demo-data';
+import { useActiveRunId } from '../hooks/useActiveRun';
+import { trpc } from '../lib/trpc';
+import { BTN, INPUT, NUMERIC } from '../lib/ui';
+import { DualInspectorPanel } from './harvest/DualInspectorPanel';
+import { HARVEST_COLUMNS, HarvestHoverContent } from './harvest/harvest-columns';
+import { buildHarvestNodes, type HarvestNode, type NodeLookupEntry } from './harvest/harvest-nodes';
 
-const KIND_LABEL: Record<HarvestNode['kind'], string> = {
-  series: 'Serie',
-  part: 'Artikel',
-  group: 'Gruppe',
-  pin: 'Pin',
-};
+/** Harvest- & Compiler-Grid mit Batch-Aktionen und Dual-Inspector. */
+export function HarvestGridView() {
+  const runId = useActiveRunId();
+  const utils = trpc.useUtils();
+  const tree = trpc.compiler.tree.useQuery({ runId: runId ?? '' }, { enabled: runId !== null });
+  const models = trpc.ai.models.list.useQuery({});
+  const [modelKey, setModelKey] = useState('');
+  const [activeNodeId, setActiveNodeId] = useState<string | null>(null);
+  const [selected, setSelected] = useState<string[]>([]);
 
-const columns: TreeGridColumn<HarvestNode>[] = [
-  {
-    id: 'kind',
-    header: 'Typ',
-    width: 80,
-    align: 'center',
-    render: (node) => (
-      <span className="rounded bg-slate-100 px-1.5 py-0 text-[10px] font-semibold uppercase tracking-wider text-slate-600 dark:bg-slate-800 dark:text-slate-300">
-        {KIND_LABEL[node.kind]}
-      </span>
-    ),
-  },
-  {
-    id: 'origin',
-    header: 'Herkunft',
-    width: 80,
-    align: 'center',
-    render: (node) => (node.origin ? <OriginBadge origin={node.origin} /> : null),
-  },
-  { id: 'voltage', header: 'Spannung (V)', width: 100, numeric: true, render: (n) => n.voltage ?? '–' },
-  { id: 'current', header: 'Strom (A)', width: 90, numeric: true, render: (n) => n.current ?? '–' },
-  { id: 'torque', header: 'Drehmoment (Nm)', width: 120, numeric: true, render: (n) => n.torque ?? '–' },
-];
+  const invalidate = (): void => {
+    void utils.compiler.tree.invalidate();
+    void utils.compiler.getCompiled.invalidate();
+    void utils.compiler.listParts.invalidate();
+  };
+  const extract = trpc.parts.extractFacts.useMutation({ onSuccess: invalidate });
+  const compileBatch = trpc.compiler.compileParts.useMutation({ onSuccess: invalidate });
 
-function HoverContent({ node }: { node: HarvestNode }) {
-  return (
-    <div className="space-y-1">
-      <div className="select-all font-mono text-[12px] text-slate-100">{node.name}</div>
-      <div className="text-[11px] text-slate-300">
-        {KIND_LABEL[node.kind]} · Status {node.status}
+  const { nodes, lookup } = useMemo(
+    () => buildHarvestNodes(tree.data ?? []),
+    [tree.data],
+  );
+
+  const activePartId = activeNodeId ? (lookup.get(activeNodeId)?.partId ?? null) : null;
+  const selectedPartIds = selected
+    .map((id) => lookup.get(id))
+    .filter(
+      (entry): entry is NodeLookupEntry & { partId: string } =>
+        entry?.kind === 'part' && entry.partId !== undefined,
+    )
+    .map((entry) => entry.partId);
+
+  const activeModels = (models.data ?? []).filter((model) => model.isActive);
+  const providerId = modelKey.includes(':') ? modelKey.slice(0, modelKey.indexOf(':')) : '';
+  const modelId = modelKey.includes(':') ? modelKey.slice(modelKey.indexOf(':') + 1) : '';
+
+  const batchBar: ReactNode = (
+    <div className="flex items-center gap-1">
+      <select className={INPUT} value={modelKey} onChange={(event) => setModelKey(event.target.value)}>
+        <option value="">KI-Modell wählen...</option>
+        {activeModels.map((model) => (
+          <option key={model.id} value={model.id}>
+            {model.id}
+          </option>
+        ))}
+      </select>
+      <button
+        type="button"
+        className={BTN}
+        disabled={!runId || selectedPartIds.length === 0 || !modelKey}
+        onClick={() => runId && extract.mutate({ runId, partIds: selectedPartIds, providerId, modelId })}
+      >
+        <Sparkles className="mr-1 inline h-3 w-3 text-indigo-500" />
+        Ausgewählte mit KI extrahieren
+      </button>
+      <button
+        type="button"
+        className={BTN}
+        disabled={!runId || selectedPartIds.length === 0}
+        onClick={() => runId && compileBatch.mutate({ runId, partIds: selectedPartIds })}
+      >
+        <Cpu className="mr-1 inline h-3 w-3 text-amber-500" />
+        Ausgewählte kompilieren
+      </button>
+    </div>
+  );
+
+  if (!runId) {
+    return (
+      <div className="flex h-full items-center justify-center text-[12px] text-slate-400">
+        Kein aktiver Run. Bitte im Run-Manager einen Run anlegen und aktivieren.
       </div>
-      <div className="text-[11px] text-slate-300">{node.note}</div>
-      {node.origin ? (
-        <div className="pt-1">
-          <OriginBadge origin={node.origin} />
+    );
+  }
+
+  return (
+    <div className="flex h-full min-h-0">
+      <div className="flex min-h-0 min-w-0 flex-1 flex-col">
+        <HighDensityTreeGrid<HarvestNode>
+          data={nodes}
+          columns={HARVEST_COLUMNS}
+          getSubRows={(node) => node.subItems}
+          getRowName={(node) => node.name}
+          getRowStatus={(node) => node.status}
+          getRowIcon={(node) =>
+            node.kind === 'pin' ? (
+              <Zap className="h-3.5 w-3.5" />
+            ) : node.kind === 'group' ? (
+              <Table2 className="h-3.5 w-3.5" />
+            ) : null
+          }
+          storageKey="harvest"
+          title="Harvest & Compiler Grid"
+          selectable
+          renderHoverCard={(node) => <HarvestHoverContent node={node} />}
+          toolbarRight={batchBar}
+          footerRight={
+            <span className={`${NUMERIC} text-[11px]`}>Ausgewählt: {selectedPartIds.length} Artikel</span>
+          }
+          onActiveChange={setActiveNodeId}
+          onSelectionChange={setSelected}
+        />
+      </div>
+      {activePartId ? (
+        <div className="w-[380px] min-w-[380px]">
+          <DualInspectorPanel runId={runId} partId={activePartId} />
         </div>
       ) : null}
     </div>
-  );
-}
-
-/** Harvest- & Compiler-Grid (Meilenstein 5: 24px-Demo-Baum, M6: Live-Daten). */
-export function HarvestGridView() {
-  return (
-    <HighDensityTreeGrid<HarvestNode>
-      data={DEMO_HARVEST_TREE}
-      columns={columns}
-      getSubRows={(node) => node.subItems}
-      getRowName={(node) => node.name}
-      getRowStatus={(node) => node.status}
-      getRowIcon={(node) =>
-        node.kind === 'pin' ? (
-          <Zap className="h-3.5 w-3.5" />
-        ) : node.kind === 'group' ? (
-          <Table2 className="h-3.5 w-3.5" />
-        ) : null
-      }
-      storageKey="harvest"
-      title="Harvest & Compiler Grid"
-      selectable
-      renderHoverCard={(node) => <HoverContent node={node} />}
-      toolbarRight={
-        <span className="text-[11px] text-slate-500 dark:text-slate-400">
-          Demo-Daten · Live-Anbindung in M6
-        </span>
-      }
-      footerRight={<span>Run: run_001 · Status: VALIDATED</span>}
-    />
   );
 }

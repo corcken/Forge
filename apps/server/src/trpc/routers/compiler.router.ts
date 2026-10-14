@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { buildRunTree } from '../../pipeline/run-tree.js';
 import { publicProcedure, router } from '../trpc.js';
 
 const runIdInput = z.object({ runId: z.string().min(1) });
@@ -46,5 +47,10 @@ export const compilerRouter = router({
       qualityTier: part.qualityTier,
       completenessPct: part.completenessPct,
     })),
+  ),
+
+  /** Vollstaendiger Serie -> Artikel -> Funktionsgruppe -> Pin-Baum. */
+  tree: publicProcedure.input(runIdInput).query(({ ctx, input }) =>
+    buildRunTree(input.runId, ctx.services.runParts, ctx.services.runSeries),
   ),
 });
