@@ -10,3 +10,5 @@ export * from './schemas/origins.schema.js';
 export * from './schemas/ai-extraction.schema.js';
 export * from './schemas/archetype.schema.js';
 export * from './schemas/descriptio-export.schema.js';
+export * from './schemas/symbol.schema.js';
+export * from './schemas/category.schema.js';

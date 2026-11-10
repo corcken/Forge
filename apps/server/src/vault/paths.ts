@@ -13,6 +13,9 @@ export interface VaultPaths {
   rawCacheDir: string;
   runsDir: string;
   exportsDir: string;
+  imagesRawDir: string;
+  imagesNormalizedDir: string;
+  imagesBrandedDir: string;
 }
 
 export const VAULT_DIR_NAME = '.descriptio-forge';
@@ -27,12 +30,23 @@ export function resolveVaultPaths(): VaultPaths {
     rawCacheDir: path.join(root, 'raw-cache'),
     runsDir: path.join(root, 'runs'),
     exportsDir: path.join(root, 'exports'),
+    imagesRawDir: path.join(root, 'images', 'raw'),
+    imagesNormalizedDir: path.join(root, 'images', 'normalized'),
+    imagesBrandedDir: path.join(root, 'images', 'branded'),
   };
 }
 
 /** Stellt sicher, dass Wurzel und alle Unterordner existieren (idempotent). */
 export function ensureVaultDirectories(paths: VaultPaths): void {
-  for (const dir of [paths.root, paths.rawCacheDir, paths.runsDir, paths.exportsDir]) {
+  for (const dir of [
+    paths.root,
+    paths.rawCacheDir,
+    paths.runsDir,
+    paths.exportsDir,
+    paths.imagesRawDir,
+    paths.imagesNormalizedDir,
+    paths.imagesBrandedDir,
+  ]) {
     fs.mkdirSync(dir, { recursive: true });
   }
 }

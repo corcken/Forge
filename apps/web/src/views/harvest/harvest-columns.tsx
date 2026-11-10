@@ -48,6 +48,9 @@ export function HarvestHoverContent({ node }: { node: HarvestNode }) {
         {KIND_LABEL[node.kind]} · Status {node.status}
         {node.archetypeId ? ` · ${node.archetypeId}` : ''}
       </div>
+      {node.categoryPath ? (
+        <div className="text-[11px] font-mono text-cyan-300">📁 {node.categoryPath}</div>
+      ) : null}
       {node.origin ? (
         <div className="pt-1">
           <OriginBadge origin={node.origin} />

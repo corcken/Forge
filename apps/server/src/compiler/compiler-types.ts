@@ -16,6 +16,8 @@ export interface CompilePartInput {
   archetype: IecArchetype;
   series: SeriesOverride | null;
   manualOverrides: Record<string, unknown>;
+  datasheetLink?: string | null;
+  imageLink?: string | null;
 }
 
 /** Ergebnis eines Compile-Laufs inkl. Validierungsstatus (Stufe 3 + 4). */

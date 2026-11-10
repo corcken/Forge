@@ -8,11 +8,11 @@ export function AiVaultView() {
       <div className="flex h-[32px] min-h-[32px] items-center border-b border-slate-200 bg-slate-50 px-2 font-semibold text-slate-700 dark:border-slate-800 dark:bg-slate-900 dark:text-slate-200">
         KI-Provider & Modell-Tresor
       </div>
-      <div className="min-h-0 flex-1 overflow-hidden">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
         <ProviderTable />
       </div>
       <div className="h-px bg-slate-200 dark:bg-slate-800" />
-      <div className="min-h-0 flex-[1.4] overflow-hidden">
+      <div className="flex min-h-0 flex-[1.4] flex-col overflow-hidden">
         <ModelTable />
       </div>
     </div>

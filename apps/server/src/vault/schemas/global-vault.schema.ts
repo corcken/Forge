@@ -86,4 +86,32 @@ export const GLOBAL_VAULT_MIGRATIONS: readonly string[] = [
      value TEXT,
      updated_at TEXT NOT NULL
    )`,
+
+  `CREATE TABLE IF NOT EXISTS catalog_categories (
+     id TEXT PRIMARY KEY,
+     slug TEXT UNIQUE NOT NULL,
+     parent_slug TEXT,
+     name TEXT NOT NULL,
+     path_label TEXT NOT NULL,
+     level INTEGER NOT NULL,
+     category_type TEXT DEFAULT 'PART,SYMBOL',
+     sort_order INTEGER DEFAULT 0,
+     updated_at TEXT NOT NULL
+   )`,
+
+  `CREATE TABLE IF NOT EXISTS part_media_assets (
+     manufacturer TEXT NOT NULL,
+     article_nr TEXT NOT NULL,
+     datasheet_url TEXT,
+     remote_image_url TEXT,
+     image_key TEXT,
+     raw_image_path TEXT,
+     norm_image_path TEXT,
+     status TEXT NOT NULL DEFAULT 'DISCOVERED',
+     updated_at TEXT NOT NULL,
+     PRIMARY KEY (manufacturer, article_nr)
+   )`,
+
+  `CREATE INDEX IF NOT EXISTS idx_media_image_key ON part_media_assets(image_key)`,
+  `CREATE INDEX IF NOT EXISTS idx_media_status ON part_media_assets(status)`,
 ];

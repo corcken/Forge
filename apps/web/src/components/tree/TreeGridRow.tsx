@@ -3,7 +3,7 @@ import type { Row } from '@tanstack/react-table';
 import { IndustrialHoverCard } from '../hover/IndustrialHoverCard';
 import { HierarchyCell } from './cells/HierarchyCell';
 import { StatusIconCell } from './cells/StatusIconCell';
-import { getAncestorLastChildFlags } from './tree-utils';
+import { getAncestorLastChildFlags, getRowSelectionState } from './tree-utils';
 import { cellAlignClass, type TreeGridRowContext } from './types';
 
 export interface TreeGridRowProps<T> {
@@ -15,7 +15,7 @@ export interface TreeGridRowProps<T> {
 /** Einzelne 24px-Tabellenzeile (absolut positioniert durch die Virtualisierung). */
 export function TreeGridRow<T>({ row, context, style }: TreeGridRowProps<T>) {
   const isActive = context.activeId === row.id;
-  const isSelected = context.selectedIds.has(row.id);
+  const selection = getRowSelectionState(row, context.selectedIds);
   const status = context.getRowStatus?.(row.original) ?? 'PENDING_INGEST';
   const ancestorFlags = getAncestorLastChildFlags(row, context.rootRows);
 
@@ -35,11 +35,14 @@ export function TreeGridRow<T>({ row, context, style }: TreeGridRowProps<T>) {
       {context.selectable ? (
         <div className="flex w-[28px] min-w-[28px] items-center justify-center border-r border-b border-slate-200 p-0 dark:border-slate-800">
           <input
+            ref={(el) => {
+              if (el) el.indeterminate = selection.indeterminate;
+            }}
             type="checkbox"
-            checked={isSelected}
+            checked={selection.checked}
             aria-label={`Zeile ${row.id} auswaehlen`}
             onClick={(event) => event.stopPropagation()}
-            onChange={() => context.onToggleSelect(row.id)}
+            onChange={() => context.onToggleSelect(row)}
             className="h-[14px] w-[14px] cursor-pointer accent-sky-600"
           />
         </div>

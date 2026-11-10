@@ -25,7 +25,9 @@ function buildPin(
   facts: AiExtractionOutput,
 ): CatalogPin {
   const isCoil = template.contactType === 'COIL';
-  const nominalVoltage = isCoil ? facts.coilNominalVoltage : null;
+  const nominalVoltage = isCoil
+    ? (facts.coilNominalVoltage ?? template.nominalVoltage ?? 24)
+    : template.nominalVoltage;
   const voltageType = isCoil ? (facts.coilVoltageType ?? template.voltageType) : template.voltageType;
 
   const pin = CatalogPinSchema.parse({

@@ -5,6 +5,7 @@ import type {
   IAiProviderAdapter,
 } from './adapter.interface.js';
 import { estimateBatchCost, type CostEstimate } from './cost-estimator.js';
+import { assertOk, joinUrl, readJson, request } from './http-client.js';
 import { PROVIDER_DEFINITIONS } from './provider-registry.js';
 import type { CredentialsStore } from '../vault/credentials-store.js';
 import { AiVaultRepository, type AiModelRecord } from '../vault/ai-vault-repository.js';
@@ -94,6 +95,87 @@ export class AiGateway {
       allowedArchetypeIds: req.allowedArchetypeIds,
       timeoutMs: req.timeoutMs,
     });
+  }
+
+  /** Sendet eine strukturierte Freitext-/JSON-Anfrage an ein beliebiges Modell. */
+  async queryChat(
+    providerId: string,
+    params: { modelId: string; systemPrompt: string; userPrompt: string; timeoutMs?: number },
+  ): Promise<string> {
+    const provider = this.requireProvider(providerId);
+    const apiKey = this.credentials.getProviderKey(providerId);
+    const baseUrl = this.resolveBaseUrl(provider.id, provider.baseUrl);
+    const timeoutMs = params.timeoutMs ?? 25000;
+
+    if (provider.adapterType === 'GEMINI') {
+      const url = joinUrl(baseUrl, `v1beta/models/${params.modelId}:generateContent?key=${apiKey}`);
+      const res = await request(
+        url,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            system_instruction: { parts: [{ text: params.systemPrompt }] },
+            contents: [{ role: 'user', parts: [{ text: params.userPrompt }] }],
+            generationConfig: { temperature: 0.1 },
+          }),
+        },
+        timeoutMs,
+      );
+      await assertOk(res);
+      const json = await readJson<{ candidates?: { content?: { parts?: { text?: string }[] } }[] }>(res);
+      return json.candidates?.[0]?.content?.parts?.[0]?.text ?? '';
+    }
+
+    if (provider.adapterType === 'ANTHROPIC') {
+      const url = joinUrl(baseUrl, 'v1/messages');
+      const res = await request(
+        url,
+        {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': apiKey ?? '',
+            'anthropic-version': '2023-06-01',
+          },
+          body: JSON.stringify({
+            model: params.modelId,
+            system: params.systemPrompt,
+            messages: [{ role: 'user', content: params.userPrompt }],
+            max_tokens: 4096,
+            temperature: 0.1,
+          }),
+        },
+        timeoutMs,
+      );
+      await assertOk(res);
+      const json = await readJson<{ content?: { text?: string }[] }>(res);
+      return json.content?.[0]?.text ?? '';
+    }
+
+    // Default: OPENAI_COMPAT (OpenAI, DeepSeek, OpenRouter, Ollama)
+    const url = joinUrl(baseUrl, 'v1/chat/completions');
+    const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+    if (apiKey) headers.Authorization = `Bearer ${apiKey}`;
+    const res = await request(
+      url,
+      {
+        method: 'POST',
+        headers,
+        body: JSON.stringify({
+          model: params.modelId,
+          messages: [
+            { role: 'system', content: params.systemPrompt },
+            { role: 'user', content: params.userPrompt },
+          ],
+          temperature: 0.1,
+        }),
+      },
+      timeoutMs,
+    );
+    await assertOk(res);
+    const json = await readJson<{ choices?: { message?: { content?: string | null } }[] }>(res);
+    return json.choices?.[0]?.message?.content ?? '';
   }
 
   /** Schaetzt Token- und Kostenvolumen eines Batch-Laufs. */

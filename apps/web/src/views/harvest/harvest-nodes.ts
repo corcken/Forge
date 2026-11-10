@@ -8,6 +8,7 @@ export interface HarvestNode {
   kind: HarvestKind;
   status: string;
   archetypeId?: string | null;
+  categoryPath?: string | null;
   qualityTier?: string;
   completeness?: number;
   origin?: FieldOrigin | null;
@@ -42,6 +43,7 @@ interface RunTreePartInput {
   qualityTier: string;
   completenessPct: number;
   archetypeId: string | null;
+  categoryPath?: string | null;
   functionGroups: RunTreeGroupInput[];
 }
 export interface RunTreeSeriesInput {
@@ -53,6 +55,7 @@ export interface RunTreeSeriesInput {
 export interface NodeLookupEntry {
   kind: HarvestKind;
   partId?: string;
+  partIds?: string[];
 }
 
 /** Baut aus dem Server-Baum die Grid-Knoten (Serie -> Artikel -> Gruppe -> Pin). */
@@ -61,12 +64,18 @@ export function buildHarvestNodes(tree: RunTreeSeriesInput[]): {
   lookup: Map<string, NodeLookupEntry>;
 } {
   const lookup = new Map<string, NodeLookupEntry>();
-  const nodes: HarvestNode[] = tree.map((series) => ({
-    id: `series:${series.id}`,
-    name: series.name,
-    kind: 'series',
-    status: 'VALIDATED',
-    subItems: series.parts.map((part) => {
+  const nodes: HarvestNode[] = tree.map((series) => {
+    const seriesNodeId = `series:${series.id}`;
+    lookup.set(seriesNodeId, {
+      kind: 'series',
+      partIds: series.parts.map((part) => part.id),
+    });
+    return {
+      id: seriesNodeId,
+      name: series.name,
+      kind: 'series',
+      status: 'VALIDATED',
+      subItems: series.parts.map((part) => {
       const partNodeId = `part:${part.id}`;
       lookup.set(partNodeId, { kind: 'part', partId: part.id });
       return {
@@ -75,6 +84,7 @@ export function buildHarvestNodes(tree: RunTreeSeriesInput[]): {
         kind: 'part',
         status: part.status,
         archetypeId: part.archetypeId,
+        categoryPath: part.categoryPath,
         qualityTier: part.qualityTier,
         completeness: part.completenessPct,
         partId: part.id,
@@ -104,6 +114,7 @@ export function buildHarvestNodes(tree: RunTreeSeriesInput[]): {
         }),
       };
     }),
-  }));
+    };
+  });
   return { nodes, lookup };
 }

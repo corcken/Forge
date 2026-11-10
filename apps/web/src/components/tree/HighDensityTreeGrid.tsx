@@ -12,6 +12,7 @@ import { readVisibility, writeVisibility } from './grid-storage';
 import { TreeGridHeader } from './TreeGridHeader';
 import { TreeGridRow } from './TreeGridRow';
 import { TreeGridToolbar } from './TreeGridToolbar';
+import { collectAllBranchIds, toggleRowBranchSelection } from './tree-utils';
 import type { TreeGridColumn, TreeGridRowContext, TreeGridRowData } from './types';
 import { useGridState } from './useGridState';
 
@@ -90,9 +91,12 @@ export function HighDensityTreeGrid<T extends TreeGridRowData>({
 
   const rows = table.getRowModel().rows;
   const rootRows = table.getFilteredRowModel().rows;
-  const visibleIds = rows.map((row) => row.id);
-  const allSelected = visibleIds.length > 0 && visibleIds.every((id) => grid.selectedIds.has(id));
+  const allBranchIds = useMemo(() => collectAllBranchIds(rootRows), [rootRows]);
+  const allSelected = allBranchIds.length > 0 && allBranchIds.every((id) => grid.selectedIds.has(id));
   const someSelected = grid.selectedIds.size > 0 && !allSelected;
+  const toggleRowSelection = (row: (typeof rows)[number]): void => {
+    grid.setSelectedIds((prev) => toggleRowBranchSelection(row, prev));
+  };
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -133,7 +137,7 @@ export function HighDensityTreeGrid<T extends TreeGridRowData>({
     getRowIcon,
     selectable,
     selectedIds: grid.selectedIds,
-    onToggleSelect: grid.toggleSelect,
+    onToggleSelect: toggleRowSelection,
     renderHoverCard,
   };
 
@@ -173,12 +177,12 @@ export function HighDensityTreeGrid<T extends TreeGridRowData>({
       }
       case ' ':
         event.preventDefault();
-        if (current) grid.toggleSelect(current.id);
+        if (current) toggleRowSelection(current);
         break;
       case 'a':
         if (event.ctrlKey || event.metaKey) {
           event.preventDefault();
-          grid.setSelectedIds(allSelected ? new Set<string>() : new Set<string>(visibleIds));
+          grid.setSelectedIds(allSelected ? new Set<string>() : new Set<string>(allBranchIds));
         }
         break;
       default:
@@ -207,7 +211,7 @@ export function HighDensityTreeGrid<T extends TreeGridRowData>({
         allSelected={allSelected}
         someSelected={someSelected}
         onToggleAll={() =>
-          grid.setSelectedIds(allSelected ? new Set<string>() : new Set<string>(visibleIds))
+          grid.setSelectedIds(allSelected ? new Set<string>() : new Set<string>(allBranchIds))
         }
       />
       <div ref={scrollRef} data-testid="grid-scroll" className="relative min-h-0 flex-1 overflow-auto">

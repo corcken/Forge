@@ -2,9 +2,11 @@ import fs from 'node:fs';
 import path from 'node:path';
 import {
   DescriptioExportPackageSchema,
+  type CatalogCategoryNode,
   type CatalogPart,
 } from '@descriptio-forge/shared';
 import { sha256Hex } from '../pipeline/ingest-utils.js';
+import type { CategoryRepository } from '../vault/category-repository.js';
 import type { RunPartRepository } from '../vault/run-part-repository.js';
 import type { VaultPaths } from '../vault/paths.js';
 
@@ -26,7 +28,12 @@ export interface ExportFileInfo {
  * Exportiert alle validierten Artikel eines Runs als flaches, vollstaendig
  * typisiertes `.descriptio.json`-Paket nach `~/.descriptio-forge/exports/`.
  */
-export function exportRun(runId: string, repo: RunPartRepository, paths: VaultPaths): ExportResult {
+export function exportRun(
+  runId: string,
+  repo: RunPartRepository,
+  paths: VaultPaths,
+  categoryRepo?: CategoryRepository,
+): ExportResult {
   const valid = repo
     .listParts(runId)
     .filter(
@@ -34,6 +41,8 @@ export function exportRun(runId: string, repo: RunPartRepository, paths: VaultPa
         part.compiledPart !== null &&
         (part.pipelineStatus === 'VALIDATED' || part.pipelineStatus === 'EXPORT_READY'),
     );
+
+  const categories: CatalogCategoryNode[] = categoryRepo ? categoryRepo.listCategories() : [];
 
   const catalogParts: CatalogPart[] = valid.map((part) => {
     const version = part.compiledPart!;
@@ -45,6 +54,11 @@ export function exportRun(runId: string, repo: RunPartRepository, paths: VaultPa
       type: null,
       seriesName: version.seriesName,
       category: version.category,
+      categoryId: version.categoryId ?? null,
+      categorySlug: version.categorySlug ?? null,
+      categoryPath: version.categoryPath ?? null,
+      datasheetLink: version.datasheetLink ?? null,
+      imageLink: version.imageLink ?? null,
       archetypeId: part.archetypeId,
       versions: [version],
     };
@@ -57,6 +71,7 @@ export function exportRun(runId: string, repo: RunPartRepository, paths: VaultPa
     generatedAt,
     appVersion: '0.1.0',
     importHash,
+    categories,
     parts: catalogParts,
   });
 

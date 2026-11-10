@@ -1,206 +1,15 @@
 import {
   ArchetypeCategorySchema,
-  FunctionGroupTemplateSchema,
   IecArchetypeSchema,
-  PinTemplateSchema,
-  type ArchetypeCategory,
-  type FunctionGroupTemplate,
-  type FunctionGroupType,
   type IecArchetype,
-  type MountingType,
-  type PinTemplate,
-  type PotentialPropagation,
-  type ContactType,
-  type ElectricalRole,
-  type VoltageType,
 } from '@descriptio-forge/shared';
+import { buildRelaysTerminalsAndAutomationArchetypes } from './archetype-relays-terminals.js';
+import { buildSwitchgearAndProtectionArchetypes } from './archetype-switchgear.js';
 
-/** Erzeugt einen validierten Pin aus Kurzangaben + optionalen Overrides. */
-function pin(
-  pinName: string,
-  contactType: ContactType,
-  electricalRole: ElectricalRole,
-  voltageType: VoltageType,
-  extra: Partial<PinTemplate> = {},
-): PinTemplate {
-  return PinTemplateSchema.parse({ pinName, contactType, electricalRole, voltageType, ...extra });
-}
-
-/** Erzeugt eine validierte Funktionsgruppe inkl. Pins. */
-function group(
-  groupKey: string,
-  functionType: FunctionGroupType,
-  potentialPropagation: PotentialPropagation,
-  pins: PinTemplate[],
-  extra: Partial<FunctionGroupTemplate> = {},
-): FunctionGroupTemplate {
-  return FunctionGroupTemplateSchema.parse({
-    groupKey,
-    functionType,
-    potentialPropagation,
-    pins,
-    ...extra,
-  });
-}
-
-/** Erzeugt einen validierten IEC-Archetyp. */
-function archetype(
-  id: string,
-  name: string,
-  category: ArchetypeCategory,
-  defaultBmkPrefix: string,
-  mountingTypeDefault: MountingType,
-  functionGroupsTemplate: FunctionGroupTemplate[],
-): IecArchetype {
-  return IecArchetypeSchema.parse({
-    id,
-    name,
-    category,
-    defaultBmkPrefix,
-    mountingTypeDefault,
-    functionGroupsTemplate,
-  });
-}
-
-const coil = (
-  groupKey: string,
-  potentials: PotentialPropagation = 'ISOLATED_TRANSFORM',
-): FunctionGroupTemplate =>
-  group(
-    groupKey,
-    'COIL',
-    potentials,
-    [
-      pin('A1', 'COIL', 'SOURCE', 'ANY'),
-      pin('A2', 'COIL', 'SINK', 'ANY'),
-    ],
-    { bmkPrefix: 'K' },
-  );
-
-const mainPoles = (count: number): FunctionGroupTemplate => {
-  const pins: PinTemplate[] = [];
-  for (let pole = 1; pole <= count; pole += 1) {
-    const from = pole * 2 - 1;
-    const to = pole * 2;
-    pins.push(pin(`${from}/L${pole}`, 'NO_CONTACT', 'SOURCE', 'AC_DC'));
-    pins.push(pin(`${to}/T${pole}`, 'NO_CONTACT', 'SINK', 'AC_DC'));
-  }
-  return group(`MAIN_NO_${count}P`, 'NO_CONTACT', 'SWITCHED_PASS_THROUGH', pins);
-};
-
-const auxContact = (
-  groupKey: string,
-  contactType: ContactType,
-  from: string,
-  to: string,
-): FunctionGroupTemplate =>
-  group(groupKey, contactType, 'SWITCHED_PASS_THROUGH', [
-    pin(from, contactType, 'SOURCE', 'ANY'),
-    pin(to, contactType, 'SINK', 'ANY'),
-  ]);
-
-/** Die 10 initialen Standard-IEC-Archetypen fuer das globale Seeding. */
+/** Komplette parametrische IEC-Archetypen-Bibliothek (~590 Vorlagen). */
 export const STANDARD_IEC_ARCHETYPES: readonly IecArchetype[] = [
-  archetype(
-    'CONTACTOR_3P_1NO',
-    'Schuetz 3P + 1S',
-    'SWITCHGEAR',
-    'Q',
-    'DIN_RAIL',
-    [coil('COIL_1'), mainPoles(3), auxContact('AUX_NO_1', 'NO_CONTACT', '13', '14')],
-  ),
-  archetype(
-    'CONTACTOR_3P_1NC',
-    'Schuetz 3P + 1OE',
-    'SWITCHGEAR',
-    'Q',
-    'DIN_RAIL',
-    [coil('COIL_1'), mainPoles(3), auxContact('AUX_NC_1', 'NC_CONTACT', '21', '22')],
-  ),
-  archetype('MCB_1P', 'Leitungsschutzschalter 1P', 'PROTECTION', 'F', 'DIN_RAIL', [
-    mainPoles(1),
-  ]),
-  archetype('MCB_3P', 'Leitungsschutzschalter 3P', 'PROTECTION', 'F', 'DIN_RAIL', [
-    mainPoles(3),
-  ]),
-  archetype(
-    'MSS_3P',
-    'Motorschutzschalter 3P',
-    'PROTECTION',
-    'F',
-    'DIN_RAIL',
-    [mainPoles(3), auxContact('AUX_NO_1', 'NO_CONTACT', '13', '14')],
-  ),
-  archetype(
-    'TERMINAL_THROUGH_1LVL_2PIN',
-    'Reihenklemme Durchgang 1 Ebene 2 Anschluesse',
-    'TERMINAL',
-    'X',
-    'DIN_RAIL',
-    [
-      group('PASS_1', 'TERMINAL_PASS', 'INTERNAL_BRIDGE', [
-        pin('1', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
-        pin('2', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
-      ]),
-    ],
-  ),
-  archetype(
-    'TERMINAL_THROUGH_1LVL_4PIN',
-    'Reihenklemme Durchgang 1 Ebene 4 Anschluesse',
-    'TERMINAL',
-    'X',
-    'DIN_RAIL',
-    [
-      group('PASS_1', 'TERMINAL_PASS', 'INTERNAL_BRIDGE', [
-        pin('1', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
-        pin('2', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
-        pin('3', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
-        pin('4', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
-      ]),
-    ],
-  ),
-  archetype('TERMINAL_PE_1LVL', 'PE-Klemme 1 Ebene', 'TERMINAL', 'X', 'DIN_RAIL', [
-    group('PE_1', 'TERMINAL_PASS', 'POTENTIAL_SINK', [
-      pin('PE1', 'TERMINAL_PASS', 'REFERENCE', 'ANY'),
-      pin('PE2', 'TERMINAL_PASS', 'REFERENCE', 'ANY'),
-    ]),
-  ]),
-  archetype('PSU_1AC_24VDC', 'Netzteil 1AC / 24VDC', 'POWER_SUPPLY', 'G', 'DIN_RAIL', [
-    group(
-      'INPUT_MAINS',
-      'TERMINAL_PASS',
-      'NONE',
-      [
-        pin('L', 'TERMINAL_PASS', 'SOURCE', 'AC', { nominalVoltage: 230 }),
-        pin('N', 'TERMINAL_PASS', 'SINK', 'AC', { nominalVoltage: 230 }),
-        pin('PE', 'TERMINAL_PASS', 'REFERENCE', 'ANY'),
-      ],
-      { bmkPrefix: 'G' },
-    ),
-    group(
-      'OUTPUT_DC',
-      'POWER_OUT',
-      'ISOLATED_TRANSFORM',
-      [
-        pin('+24V', 'POWER_OUT', 'SOURCE', 'DC', { nominalVoltage: 24 }),
-        pin('0V', 'POWER_OUT', 'SINK', 'DC', { nominalVoltage: 0 }),
-      ],
-      { bmkPrefix: 'G' },
-    ),
-  ]),
-  archetype('RELAY_COIL_2CO', 'Relais 2 Wechsler', 'SWITCHGEAR', 'K', 'DIN_RAIL', [
-    coil('COIL_1', 'ISOLATED_TRANSFORM'),
-    group('CO_1', 'CHANGEOVER_CONTACT', 'SWITCHED_PASS_THROUGH', [
-      pin('11', 'CHANGEOVER_CONTACT', 'SOURCE', 'ANY'),
-      pin('12', 'CHANGEOVER_CONTACT', 'SINK', 'ANY'),
-      pin('14', 'CHANGEOVER_CONTACT', 'SINK', 'ANY'),
-    ]),
-    group('CO_2', 'CHANGEOVER_CONTACT', 'SWITCHED_PASS_THROUGH', [
-      pin('21', 'CHANGEOVER_CONTACT', 'SOURCE', 'ANY'),
-      pin('22', 'CHANGEOVER_CONTACT', 'SINK', 'ANY'),
-      pin('24', 'CHANGEOVER_CONTACT', 'SINK', 'ANY'),
-    ]),
-  ]),
+  ...buildSwitchgearAndProtectionArchetypes(),
+  ...buildRelaysTerminalsAndAutomationArchetypes(),
 ];
 
 /** Wirft beim Import, falls ein Seed-Archetyp die Zod-Validierung verletzt. */
@@ -209,4 +18,71 @@ export function assertArchetypeSeeds(): void {
     IecArchetypeSchema.parse(seed);
     ArchetypeCategorySchema.parse(seed.category);
   }
+}
+
+/**
+ * Normalisiert eine von der KI gelieferte Archetyp-ID (z. B. `MSS_3P_1S_1OE`
+ * oder `DISCONNECTOR_3P`) auf die kanonische ID in `global-vault.sqlite`.
+ */
+export function resolveCanonicalArchetypeId(
+  rawId: string | null,
+  validIds: ReadonlySet<string>,
+): string | null {
+  if (!rawId) return null;
+  const trimmed = rawId.trim().toUpperCase();
+  if (validIds.has(trimmed)) return trimmed;
+
+  const normalized = trimmed
+    .replace(/^DISCONNECTOR_/u, 'MAIN_SWITCH_')
+    .replace(/^SWITCH_DISCONNECTOR_/u, 'MAIN_SWITCH_')
+    .replace(/_(\d+)S(?=_|$)/gu, '_$1NO')
+    .replace(/_(\d+)OE(?=_|$)/gu, '_$1NC')
+    .replace(/_(\d+)W(?=_|$)/gu, '_$1CO')
+    .replace(/_0NO/gu, '')
+    .replace(/_0NC/gu, '')
+    .replace(/_0CO/gu, '');
+
+  if (validIds.has(normalized)) return normalized;
+  return trimmed;
+}
+
+const TYPE_FALLBACK_RULES: readonly { pattern: RegExp; archetypeId: string }[] = [
+  { pattern: /steuertransformator|trenntransformator|single-phase.*transformer|transformator/iu, archetypeId: 'TRANSFORMER_1P' },
+  { pattern: /bedienpanel|touchpanel|multi-touch|display|hmi/iu, archetypeId: 'HMI_PANEL_24DC' },
+  { pattern: /sicherheitspositionsschalter|positionsschalter|endschalter|grenztaster|limit switch/iu, archetypeId: 'POSITION_SWITCH_1NO_1NC' },
+  { pattern: /induktiver sensor|kapazitiver sensor|optischer sensor|näherungsschalter|naeherungsschalter|proximity switch/iu, archetypeId: 'SENSOR_3WIRE_PNP_NO' },
+  { pattern: /kompakt-sps|kleinsteuerung|compact plc/iu, archetypeId: 'PLC_COMPACT_24DC' },
+  { pattern: /kommunikationsmodul|feldbusmodul|gateway|measuring.*module|mess-.*modul|interface-modul|ausgangserweiterung/iu, archetypeId: 'PLC_COMM_MODULE' },
+  { pattern: /basismodul|xi\/on.*basis|base module/iu, archetypeId: 'PLC_BASE_MODULE' },
+  { pattern: /arbeitsstromauslöser|arbeitsstromausloeser|ersatzspule|einschaltmagnet|shunt release|spare coil/iu, archetypeId: 'RELEASE_COIL_SHUNT' },
+  { pattern: /unterspannungsauslöser|unterspannungsausloeser|erdschlussauslöser|erdschlussausloeser|undervoltage/iu, archetypeId: 'RELEASE_COIL_UV' },
+  { pattern: /motorantrieb|fernantrieb|remote operator|motor operator/iu, archetypeId: 'MOTOR_OPERATOR_2PIN' },
+  { pattern: /sicherungspatrone|sicherungseinsatz|fuse cartridge|fuse link|schmelzeinsatz/iu, archetypeId: 'FUSE_LINK_1P' },
+  { pattern: /glasfaser|flachkabel|programmierkabel|kabelanschluss|verbindungsleitung|patchkabel|leitungsadapter|fiber optic/iu, archetypeId: 'DATA_CABLE' },
+  { pattern: /gehäuse|gehaeuse|enclosure|verteiler|schaltschrank/iu, archetypeId: 'ENCLOSURE_EMPTY' },
+  { pattern: /leuchtwahltaste|leuchtdrucktaste|leuchtmelder|led-element/iu, archetypeId: 'PILOT_ACTUATOR_LED' },
+  { pattern: /schlüsseltaster|schluesseltaster|wahlschalter|drucktaster|not-halt|not-aus|knebelgriff|tastenkopf|aktor|actuator|betätiger|betaetiger/iu, archetypeId: 'PILOT_ACTUATOR_ONLY' },
+  { pattern: /sammelschienenklemme|anschlussklemme|einspeiseklemme|sammelschienenadapter|klemmenblock|klemmenplatte|verbindungsklemme|anschlussblock/iu, archetypeId: 'BUSBAR_TERMINAL_1P' },
+  { pattern: /sammelschiene|phasenschiene|kupfer-sammelschiene|kupferband|sammelschienenträger|busbar/iu, archetypeId: 'BUSBAR_3P' },
+  { pattern: /druckwächter|druckwaechter|pressure switch/iu, archetypeId: 'PRESSURE_SWITCH_3P' },
+  { pattern: /varistor|schutzbeschaltung|entstör|rc-glied|suppressor/iu, archetypeId: 'SURGE_SUPPRESSOR_2PIN' },
+  { pattern: /hauptschalter|lasttrennschalter|nockenschalter|ein-aus-schalter|umschalter|stufenschalter/iu, archetypeId: 'MAIN_SWITCH_3P' },
+  { pattern: /hilfsschalter|hilfskontakt/iu, archetypeId: 'AUX_BLOCK_1NO_1NC' },
+  { pattern: /montage|flansch|tülle|tuelle|schild|platte|profil|winkel|schiene|abdeckung|schlüssel|key|mutter|verschraubung|zubehör|accessory|tasche|blende|halter|kappe|brücke|bruecke/iu, archetypeId: 'MECHANICAL_ACCESSORY' },
+];
+
+/**
+ * Fallback-Ableitung fuer den Compiler, falls die KI `archetypeId: null`
+ * geliefert hat, aber `type` oder `name` den Bauteiltyp klar benennt.
+ */
+export function inferArchetypeFromType(
+  typeStr: string | null | undefined,
+  nameStr?: string | null,
+): string | null {
+  const combined = `${typeStr ?? ''} ${nameStr ?? ''}`.trim();
+  if (!combined) return null;
+  for (const rule of TYPE_FALLBACK_RULES) {
+    if (rule.pattern.test(combined)) return rule.archetypeId;
+  }
+  return 'MECHANICAL_ACCESSORY';
 }

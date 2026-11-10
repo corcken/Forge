@@ -15,9 +15,25 @@ export const queueRouter = router({
         budgetUsd: z.number().nonnegative().nullable().optional(),
       }),
     )
-    .mutation(({ ctx, input }) =>
-      ctx.services.batchQueue.run(
-        input.partIds,
+    .mutation(({ ctx, input }) => {
+      const candidates = input.partIds
+        .map((id) => ctx.services.runParts.getPart(input.runId, id))
+        .filter((part): part is NonNullable<typeof part> => Boolean(part))
+        .filter((part) =>
+          Boolean(
+            ctx.services.globalDb.findRawDocument(part.manufacturer, part.articleNr)?.extractedMarkdown,
+          ),
+        );
+      const unextracted = candidates.filter((part) => part.aiRawJson === null);
+      const targetIds = (unextracted.length > 0 ? unextracted : candidates).map((part) => part.id);
+      if (targetIds.length < input.partIds.length) {
+        ctx.services.activityLog.info(
+          'QUEUE',
+          `KI-Queue-Filter: ${targetIds.length} von ${input.partIds.length} ausgewaehlten Artikeln werden extrahiert (bereits extrahierte oder ohne Datenblatt uebersprungen).`,
+        );
+      }
+      return ctx.services.batchQueue.run(
+        targetIds,
         async (partId) => {
           const result = await ctx.services.extractionService.extractOne(
             input.runId,
@@ -29,8 +45,8 @@ export const queueRouter = router({
           return { costUsd: result.costUsd ?? 0 };
         },
         input.budgetUsd ?? null,
-      ),
-    ),
+      );
+    }),
 
   pause: publicProcedure.mutation(({ ctx }) => ctx.services.batchQueue.pause()),
   resume: publicProcedure.mutation(({ ctx }) => ctx.services.batchQueue.resume()),

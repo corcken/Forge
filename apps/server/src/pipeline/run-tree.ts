@@ -29,6 +29,7 @@ export interface RunTreePart {
   qualityTier: string;
   completenessPct: number;
   archetypeId: string | null;
+  categoryPath?: string | null;
   functionGroups: RunTreeGroup[];
 }
 
@@ -89,6 +90,7 @@ export function buildRunTree(
       qualityTier: part.qualityTier,
       completenessPct: part.completenessPct,
       archetypeId: part.archetypeId,
+      categoryPath: compiled?.categoryPath,
       functionGroups: (compiled?.functionGroups ?? []).map((group) => ({
         id: group.id,
         name: group.groupKey,

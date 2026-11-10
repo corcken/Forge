@@ -52,6 +52,9 @@ export const RUN_MIGRATIONS: readonly string[] = [
      origin_source TEXT DEFAULT 'ARC'
    )`,
 
+  `CREATE INDEX IF NOT EXISTS idx_compiled_fg_part
+     ON compiled_function_groups(part_id)`,
+
   `CREATE TABLE IF NOT EXISTS compiled_pins (
      id TEXT PRIMARY KEY,
      part_id TEXT NOT NULL REFERENCES staged_parts(id) ON DELETE CASCADE,

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { CatalogCategoryNodeSchema } from './category.schema.js';
 import {
   ArchetypeCategorySchema,
   ConnectionTypeSchema,
@@ -114,8 +115,13 @@ export const CatalogPartVersionSchema = z.object({
 
   archetypeId: z.string().nullable().default(null),
   category: ArchetypeCategorySchema.nullable().default(null),
+  categoryId: z.string().nullable().default(null),
+  categorySlug: z.string().nullable().default(null),
+  categoryPath: z.string().nullable().default(null),
   mountingType: MountingTypeSchema.nullable().default(null),
   seriesName: z.string().nullable().default(null),
+  datasheetLink: z.string().nullable().default(null),
+  imageLink: z.string().nullable().default(null),
 
   width: z.number().nullable().default(null),
   height: z.number().nullable().default(null),
@@ -154,7 +160,12 @@ export const CatalogPartSchema = z.object({
   type: z.string().nullable().default(null),
   seriesName: z.string().nullable().default(null),
   category: ArchetypeCategorySchema.nullable().default(null),
+  categoryId: z.string().nullable().default(null),
+  categorySlug: z.string().nullable().default(null),
+  categoryPath: z.string().nullable().default(null),
   archetypeId: z.string().nullable().default(null),
+  datasheetLink: z.string().nullable().default(null),
+  imageLink: z.string().nullable().default(null),
   versions: z.array(CatalogPartVersionSchema).min(1),
 });
 export type CatalogPart = z.infer<typeof CatalogPartSchema>;
@@ -165,6 +176,7 @@ export const DescriptioExportPackageSchema = z.object({
   generatedAt: z.string(),
   appVersion: z.string(),
   importHash: z.string(),
+  categories: z.array(CatalogCategoryNodeSchema).default([]),
   parts: z.array(CatalogPartSchema),
 });
 export type DescriptioExportPackage = z.infer<typeof DescriptioExportPackageSchema>;

@@ -1,4 +1,5 @@
 import pLimit from 'p-limit';
+import type { ActivityLogService } from './activity-log.js';
 
 export type QueueStatus = 'IDLE' | 'RUNNING' | 'PAUSED' | 'STOPPED' | 'DONE';
 
@@ -22,6 +23,7 @@ export type QueueWorker = (id: string) => Promise<QueueTaskOutcome>;
 
 export interface BatchQueueOptions {
   concurrency?: number;
+  logger?: ActivityLogService;
 }
 
 class StoppedError extends Error {}
@@ -49,9 +51,11 @@ export class BatchQueue {
   private paused = false;
   private stopped = false;
   private readonly concurrency: number;
+  private readonly logger?: ActivityLogService;
 
   constructor(options: BatchQueueOptions = {}) {
     this.concurrency = options.concurrency ?? 5;
+    this.logger = options.logger;
   }
 
   getState(): QueueState {
@@ -103,6 +107,7 @@ export class BatchQueue {
       finishedAt: null,
       lastError: null,
     };
+    this.logger?.info('QUEUE', `Batch-Lauf gestartet: ${ids.length} Aufgaben (Concurrency ${this.concurrency})`);
 
     const limit = pLimit(this.concurrency);
     const gate = async (): Promise<void> => {
@@ -133,6 +138,10 @@ export class BatchQueue {
 
     if (this.state.status !== 'STOPPED') this.state.status = 'DONE';
     this.state.finishedAt = new Date().toISOString();
+    this.logger?.info(
+      'QUEUE',
+      `Batch-Lauf beendet (${this.state.status}): ✓${this.state.completed} erfolgreich, ✗${this.state.failed} fehlgeschlagen`,
+    );
     return this.getState();
   }
 }

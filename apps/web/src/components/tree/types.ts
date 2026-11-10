@@ -40,6 +40,6 @@ export interface TreeGridRowContext<T> {
   getRowIcon?: (row: T) => ReactNode;
   selectable?: boolean;
   selectedIds: Set<string>;
-  onToggleSelect: (id: string) => void;
+  onToggleSelect: (row: Row<T>) => void;
   renderHoverCard?: (row: T) => ReactNode;
 }

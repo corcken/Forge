@@ -107,9 +107,26 @@ export class OpenAiCompatAdapter implements IAiProviderAdapter {
       },
       timeoutMs,
     );
-    const res =
+    const secondAttempt =
       firstAttempt.ok || ![400, 404, 422].includes(firstAttempt.status)
         ? firstAttempt
+        : await request(
+            url,
+            {
+              method: 'POST',
+              headers,
+              body: JSON.stringify({
+                model: params.modelId,
+                messages,
+                temperature: 0,
+                response_format: { type: 'json_object' },
+              }),
+            },
+            timeoutMs,
+          );
+    const res =
+      secondAttempt.ok || ![400, 404, 422].includes(secondAttempt.status)
+        ? secondAttempt
         : await request(
             url,
             {

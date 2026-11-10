@@ -1,4 +1,4 @@
-import { Cpu, Sparkles, Table2, Zap } from 'lucide-react';
+import { Cpu, FolderTree, Sparkles, Table2, Trash2, Zap } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
 import { HighDensityTreeGrid } from '../components/tree/HighDensityTreeGrid';
 import { useActiveRunId } from '../hooks/useActiveRun';
@@ -6,7 +6,7 @@ import { trpc } from '../lib/trpc';
 import { BTN, INPUT, NUMERIC } from '../lib/ui';
 import { DualInspectorPanel } from './harvest/DualInspectorPanel';
 import { HARVEST_COLUMNS, HarvestHoverContent } from './harvest/harvest-columns';
-import { buildHarvestNodes, type HarvestNode, type NodeLookupEntry } from './harvest/harvest-nodes';
+import { buildHarvestNodes, type HarvestNode } from './harvest/harvest-nodes';
 
 /** Harvest- & Compiler-Grid mit Batch-Aktionen und Dual-Inspector. */
 export function HarvestGridView() {
@@ -22,9 +22,23 @@ export function HarvestGridView() {
     void utils.compiler.tree.invalidate();
     void utils.compiler.getCompiled.invalidate();
     void utils.compiler.listParts.invalidate();
+    void utils.queue.status.invalidate();
   };
-  const extract = trpc.parts.extractFacts.useMutation({ onSuccess: invalidate });
+  const extract = trpc.queue.startExtraction.useMutation({
+    onMutate: () => void utils.queue.status.invalidate(),
+    onSuccess: invalidate,
+    onSettled: () => void utils.queue.status.invalidate(),
+  });
   const compileBatch = trpc.compiler.compileParts.useMutation({ onSuccess: invalidate });
+  const reclassify = trpc.categories.reclassify.useMutation({ onSuccess: invalidate });
+  const removeBatch = trpc.parts.removeMany.useMutation({
+    onSuccess: () => {
+      setSelected([]);
+      setActiveNodeId(null);
+      invalidate();
+      void utils.runs.list.invalidate();
+    },
+  });
 
   const { nodes, lookup } = useMemo(
     () => buildHarvestNodes(tree.data ?? []),
@@ -32,13 +46,17 @@ export function HarvestGridView() {
   );
 
   const activePartId = activeNodeId ? (lookup.get(activeNodeId)?.partId ?? null) : null;
-  const selectedPartIds = selected
-    .map((id) => lookup.get(id))
-    .filter(
-      (entry): entry is NodeLookupEntry & { partId: string } =>
-        entry?.kind === 'part' && entry.partId !== undefined,
-    )
-    .map((entry) => entry.partId);
+  const selectedPartIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const id of selected) {
+      const entry = lookup.get(id);
+      if (entry?.kind === 'part' && entry.partId) ids.add(entry.partId);
+      else if (entry?.kind === 'series' && entry.partIds) {
+        for (const pId of entry.partIds) ids.add(pId);
+      }
+    }
+    return Array.from(ids);
+  }, [selected, lookup]);
 
   const activeModels = (models.data ?? []).filter((model) => model.isActive);
   const providerId = modelKey.includes(':') ? modelKey.slice(0, modelKey.indexOf(':')) : '';
@@ -57,20 +75,47 @@ export function HarvestGridView() {
       <button
         type="button"
         className={BTN}
-        disabled={!runId || selectedPartIds.length === 0 || !modelKey}
+        disabled={!runId || selectedPartIds.length === 0 || !modelKey || extract.isPending}
         onClick={() => runId && extract.mutate({ runId, partIds: selectedPartIds, providerId, modelId })}
       >
         <Sparkles className="mr-1 inline h-3 w-3 text-indigo-500" />
-        Ausgewählte mit KI extrahieren
+        {extract.isPending ? `Extrahiere (${selectedPartIds.length})...` : 'Ausgewählte mit KI extrahieren'}
       </button>
       <button
         type="button"
         className={BTN}
-        disabled={!runId || selectedPartIds.length === 0}
+        disabled={!runId || compileBatch.isPending}
         onClick={() => runId && compileBatch.mutate({ runId, partIds: selectedPartIds })}
       >
         <Cpu className="mr-1 inline h-3 w-3 text-amber-500" />
-        Ausgewählte kompilieren
+        {compileBatch.isPending ? 'Kompiliere...' : 'Ausgewählte kompilieren'}
+      </button>
+      <button
+        type="button"
+        className={BTN}
+        disabled={!runId || reclassify.isPending}
+        onClick={() => runId && reclassify.mutate({ runId })}
+        title="Alle validierten Artikel dieses Runs deterministisch in den 4-stufigen Kategoriebaum einordnen"
+      >
+        <FolderTree className="mr-1 inline h-3 w-3 text-cyan-500" />
+        {reclassify.isPending ? 'Klassifiziere...' : 'Kategorien zuordnen'}
+      </button>
+      <button
+        type="button"
+        className={BTN}
+        disabled={!runId || selectedPartIds.length === 0 || removeBatch.isPending}
+        onClick={() => {
+          if (
+            runId &&
+            window.confirm(`${selectedPartIds.length} ausgewählte Artikel aus dem Run löschen?`)
+          ) {
+            removeBatch.mutate({ runId, partIds: selectedPartIds });
+          }
+        }}
+        title="Ausgewählte Artikel aus dem Run löschen"
+      >
+        <Trash2 className="mr-1 inline h-3 w-3 text-rose-500" />
+        Löschen ({selectedPartIds.length})
       </button>
     </div>
   );

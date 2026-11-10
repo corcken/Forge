@@ -6,7 +6,9 @@ import { publicProcedure, router } from '../trpc.js';
 export const exportRouter = router({
   run: publicProcedure
     .input(z.object({ runId: z.string().min(1) }))
-    .mutation(({ ctx, input }) => exportRun(input.runId, ctx.services.runParts, ctx.services.paths)),
+    .mutation(({ ctx, input }) =>
+      exportRun(input.runId, ctx.services.runParts, ctx.services.paths, ctx.services.categoryRepo),
+    ),
 
   list: publicProcedure.query(({ ctx }) => listExports(ctx.services.paths)),
 });

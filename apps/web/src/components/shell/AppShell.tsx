@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import { SideNav, type NavView } from './SideNav';
+import { TerminalLogDrawer } from './TerminalLogDrawer';
 import { TopRunBar } from './TopRunBar';
 
 export interface AppShellProps {
@@ -9,7 +10,7 @@ export interface AppShellProps {
   children: ReactNode;
 }
 
-/** Grundgeruest der App: 32px Kopfzeile + 220px Sidebar + Inhaltsbereich. */
+/** Grundgeruest der App: 32px Kopfzeile + 220px Sidebar + Inhaltsbereich + Protokoll-Drawer. */
 export function AppShell({ views, activeViewId, onSelectView, children }: AppShellProps) {
   return (
     <div className="flex h-full w-full flex-col overflow-hidden">
@@ -17,7 +18,8 @@ export function AppShell({ views, activeViewId, onSelectView, children }: AppShe
       <div className="flex min-h-0 flex-1">
         <SideNav views={views} activeViewId={activeViewId} onSelectView={onSelectView} />
         <main className="flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden bg-white dark:bg-slate-950">
-          {children}
+          <div className="flex min-h-0 flex-1 flex-col overflow-hidden">{children}</div>
+          <TerminalLogDrawer />
         </main>
       </div>
     </div>

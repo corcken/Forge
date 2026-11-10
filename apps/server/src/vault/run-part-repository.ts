@@ -195,6 +195,24 @@ export class RunPartRepository {
     this.runManager.getRunDb(runId).prepare('DELETE FROM staged_parts WHERE id = ?').run(partId);
   }
 
+  /** Liefert alle Artikel eines Runs, die noch auf Ingestion (Download) warten. */
+  listPendingIngest(runId: string): { id: string; manufacturer: string; articleNr: string }[] {
+    const rows = this.runManager
+      .getRunDb(runId)
+      .prepare('SELECT id, manufacturer, article_nr FROM staged_parts WHERE pipeline_status = ?')
+      .all('PENDING_INGEST') as { id: string; manufacturer: string; article_nr: string }[];
+    return rows.map((r) => ({ id: r.id, manufacturer: r.manufacturer, articleNr: r.article_nr }));
+  }
+
+  /** Zaehlt Artikel nach Status. */
+  countByStatus(runId: string, status: string): number {
+    const row = this.runManager
+      .getRunDb(runId)
+      .prepare('SELECT COUNT(*) as c FROM staged_parts WHERE pipeline_status = ?')
+      .get(status) as { c: number } | undefined;
+    return row?.c ?? 0;
+  }
+
   private writeOverrides(runId: string, partId: string, overrides: Record<string, unknown>): void {
     this.runManager
       .getRunDb(runId)

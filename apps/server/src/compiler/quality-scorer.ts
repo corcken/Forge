@@ -15,6 +15,14 @@ const TRACKED_FIELDS = [
   'strippingLengthMm',
 ] as const;
 
+const PINLESS_ARCHETYPES = new Set([
+  'ENCLOSURE_EMPTY',
+  'MECHANICAL_ACCESSORY',
+  'PILOT_ACTUATOR_ONLY',
+  'PLC_BASE_MODULE',
+  'DATA_CABLE',
+]);
+
 /**
  * ERC-Plausibilitaetspruefung (Stufe 4), z. B. jede Spule A1/A2 braucht eine
  * Nennspannung. Liefert eine Liste harter Fehler (leer = bestanden).
@@ -22,7 +30,9 @@ const TRACKED_FIELDS = [
 export function runErcChecks(part: CatalogPartVersion): string[] {
   const errors: string[] = [];
   if (part.functionGroups.length === 0) {
-    errors.push('Keine Funktionsgruppen vorhanden.');
+    if (!part.archetypeId || !PINLESS_ARCHETYPES.has(part.archetypeId)) {
+      errors.push('Keine Funktionsgruppen vorhanden.');
+    }
     return errors;
   }
   for (const group of part.functionGroups) {

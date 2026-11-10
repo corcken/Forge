@@ -11,6 +11,8 @@ import {
   type VoltageType,
 } from '@descriptio-forge/shared';
 import { expandArchetype } from './archetype-expander.js';
+import { classifyPartCategory } from './category-classifier.js';
+import { resolveFunctionGroupSymbol } from './symbol-classifier.js';
 import { manualHas, manualValue, resolveField, setOrigin } from './field-merger.js';
 import { applyGeometryHeuristics } from './geometry-heuristics.js';
 import { runErcChecks, scoreQuality } from './quality-scorer.js';
@@ -150,12 +152,33 @@ export function compilePart(input: CompilePartInput): CompileResult {
   for (const [key, origin] of origins) fieldOrigins = setOrigin(fieldOrigins, key, origin);
 
   const accessoryRelations: PartAccessoryRelation[] = extractSeriesAccessories(series);
+  const catRes = classifyPartCategory({
+    archetypeId: archetype.id,
+    mainCurrentAmps: mainCurrentRes.value,
+    partName: nameRes.value,
+    description: facts.type,
+  });
+  groups = groups.map((g) => ({
+    ...g,
+    symbolDefinitionId: resolveFunctionGroupSymbol({
+      functionType: g.functionType,
+      groupKey: g.groupKey,
+      categorySlug: catRes.categorySlug,
+      archetypeId: archetype.id,
+      existingSymbolId: g.symbolDefinitionId,
+    }),
+  }));
   const draft = {
     id: partId,
     version: '1.0',
     name: nameRes.value ?? `${manufacturer} ${articleNr}`,
     archetypeId: archetype.id,
     category: archetype.category,
+    categoryId: catRes.categoryId,
+    categorySlug: catRes.categorySlug,
+    categoryPath: catRes.categoryPath,
+    datasheetLink: has('datasheetLink') ? mv<string>('datasheetLink') : (input.datasheetLink ?? null),
+    imageLink: has('imageLink') ? mv<string>('imageLink') : (input.imageLink ?? null),
     mountingType: mountingRes.value,
     seriesName: seriesNameRes.value,
     width: widthRes.value,

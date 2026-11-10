@@ -59,7 +59,7 @@ export function ProviderTable() {
   const rows = providers.data ?? [];
 
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className="flex">
         <div className={ADMIN_TH} style={{ width: 96 }}>
           Status

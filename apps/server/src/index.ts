@@ -3,7 +3,7 @@ import { initializeServices } from './services.js';
 
 export type { AppRouter } from './trpc/routers/app-router.js';
 
-const PORT = Number(process.env.PORT ?? 4317);
+const PORT = Number(process.env.PORT ?? 6200);
 const HOST = process.env.HOST ?? '127.0.0.1';
 
 async function main(): Promise<void> {

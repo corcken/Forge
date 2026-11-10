@@ -41,7 +41,7 @@ export class RawDocumentRepository {
 
   list(): RawDocumentRecord[] {
     const rows = this.globalDb.db
-      .prepare('SELECT * FROM raw_documents ORDER BY created_at DESC')
+      .prepare('SELECT * FROM raw_documents ORDER BY created_at DESC LIMIT 500')
       .all() as RawRow[];
     return rows.map((row) => ({
       id: row.id,
@@ -52,5 +52,13 @@ export class RawDocumentRepository {
       localFilePath: row.local_file_path,
       extractedMarkdown: row.extracted_markdown,
     }));
+  }
+
+  remove(id: string): void {
+    this.globalDb.db.prepare('DELETE FROM raw_documents WHERE id = ?').run(id);
+  }
+
+  clearAll(): number {
+    return this.globalDb.db.prepare('DELETE FROM raw_documents').run().changes;
   }
 }

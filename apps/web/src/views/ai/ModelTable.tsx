@@ -11,7 +11,7 @@ const TASKS: { key: AiTaskType; label: string }[] = [
   { key: 'TASK_SYMBOL_SVG', label: 'Symbol-SVG' },
 ];
 
-const BADGE = 'h-[18px] rounded border px-1.5 text-[10px] font-semibold uppercase tracking-wider';
+const BADGE = 'h-[18px] shrink-0 whitespace-nowrap rounded border px-1.5 text-[10px] font-semibold uppercase tracking-wider';
 const BADGE_ON = `${BADGE} border-sky-200 bg-sky-100 text-sky-800 dark:border-sky-800 dark:bg-sky-950/60 dark:text-sky-300`;
 const BADGE_OFF = `${BADGE} border-slate-200 bg-slate-100 text-slate-400 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-500`;
 
@@ -54,7 +54,7 @@ export function ModelTable() {
   };
 
   return (
-    <div className="flex min-h-0 flex-col">
+    <div className="flex h-full min-h-0 flex-col">
       <div className={ADMIN_TOOLBAR}>
         <span className="font-semibold text-slate-700 dark:text-slate-200">Modelle</span>
         <div className="relative">
@@ -68,11 +68,11 @@ export function ModelTable() {
         </div>
         <span className="text-[11px] text-slate-500">{rows.length} Modelle</span>
       </div>
-      <div className="flex">
+      <div className="flex min-w-fit">
         <div className={ADMIN_TH} style={{ width: 44 }}>
           Aktiv
         </div>
-        <div className={`${ADMIN_TH} flex-1`}>Modell</div>
+        <div className={`${ADMIN_TH} min-w-[140px] flex-1`}>Modell</div>
         <div className={ADMIN_TH} style={{ width: 110 }}>
           Provider
         </div>
@@ -85,7 +85,7 @@ export function ModelTable() {
         <div className={ADMIN_TH} style={{ width: 110, justifyContent: 'flex-end' }}>
           Out $/1M
         </div>
-        <div className={ADMIN_TH} style={{ width: 260 }}>
+        <div className={`${ADMIN_TH} shrink-0`} style={{ width: 364 }}>
           Task-Routing
         </div>
       </div>
@@ -93,7 +93,7 @@ export function ModelTable() {
         {rows.map((model) => {
           const draft = priceDraft[model.id] ?? {};
           return (
-            <div key={model.id} data-testid="model-row" className="flex">
+            <div key={model.id} data-testid="model-row" className="flex min-w-fit">
               <div className={`${ADMIN_TD} justify-center`} style={{ width: 44 }}>
                 <input
                   type="checkbox"
@@ -102,7 +102,7 @@ export function ModelTable() {
                   className="h-[14px] w-[14px] cursor-pointer accent-sky-600"
                 />
               </div>
-              <div className={`${ADMIN_TD} flex-1`}>
+              <div className={`${ADMIN_TD} min-w-[140px] flex-1`}>
                 <span className="truncate font-mono text-[11px]">{model.modelId}</span>
               </div>
               <div className={ADMIN_TD} style={{ width: 110 }}>
@@ -137,7 +137,7 @@ export function ModelTable() {
                   onBlur={() => commitPrice(model.id, 'out', model.inputPricePer1m)}
                 />
               </div>
-              <div className={`${ADMIN_TD} gap-1`} style={{ width: 260 }}>
+              <div className={`${ADMIN_TD} shrink-0 gap-1`} style={{ width: 364 }}>
                 {TASKS.map((task) => (
                   <button
                     key={task.key}
