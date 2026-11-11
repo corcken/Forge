@@ -145,12 +145,21 @@ export function compileSymbolForDescriptio(raw: {
   const defaultBmkPrefix = `-${rawPrefix}`;
   const isTerminal = (rawPrefix.charAt(0).toUpperCase() || 'K') === 'X';
   const width = 64, height = 64;
+  const viewBox = { x: -width / 2, y: -height / 2, width, height };
+  const rightX = viewBox.x + viewBox.width + 4;
+  const topY = viewBox.y;
+  const bottomY = viewBox.y + viewBox.height;
   const svgPath = compileElementsToSvgPath(elements);
   const stateObj = {
-    viewBox: { x: -32, y: -32, width, height },
+    viewBox,
     gridSize: 4,
     elements,
-    labelOffsets: { bmk: { x: 24, y: -12 }, description: { x: 24, y: 2 }, value: { x: 24, y: 16 }, contactMirror: { x: 0, y: 44 } },
+    labelOffsets: {
+      bmk: { x: rightX, y: topY + 8 },
+      description: { x: rightX, y: topY + 18 },
+      value: { x: rightX, y: topY + 28 },
+      contactMirror: { x: 0, y: bottomY + 12 },
+    },
     showBmk: true,
     showDescription: true,
     showValue: true,
