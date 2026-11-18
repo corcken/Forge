@@ -3,7 +3,8 @@ import type { AiGateway } from '../ai-gateway/gateway.js';
 import type { ActivityLogService } from './activity-log.js';
 import type { SymbolRepository } from '../vault/symbol-repository.js';
 import { composeIecPrimitiveSvg } from '../vault/seeds/symbol-svg-composer.js';
-import { buildMultiPolePins } from '../vault/seeds/symbol-svg-shapes.js';
+import { buildMultiPolePins, normalizeIec81346BmkPrefix } from '../vault/seeds/symbol-svg-shapes.js';
+import { normalizePinLabels } from '../exporter/descriptio-symbol-state.js';
 import { IEC_SECTIONS, type IecSection } from './iec-sections-catalog.js';
 
 export { IEC_SECTIONS, type IecSection };
@@ -129,15 +130,28 @@ export class SymbolHarvester {
       const existing = this.symbolRepo.getSymbolById(safeId);
       if (existing && existing.originType === 'STANDARD') continue;
 
-      const pinCount = Math.max(1, Math.min(4, item.pinCount ?? 2));
-      const labels = item.defaultLabels ?? (pinCount === 2 ? ['1', '2'] : ['1', '2', '3']);
-      const pins = buildMultiPolePins(pinCount, labels);
-      const bmk = (item.bmkPrefix || 'K').trim().replace(/^[-+]+/, '').toUpperCase().slice(0, 2) || 'K';
-      const svg = composeIecPrimitiveSvg(item.baseShape, item.actuator, bmk, pinCount, item.qualifier);
-
       const refText = item.iec60617Ref?.includes('Teil')
         ? item.iec60617Ref
         : `${item.iec60617Ref || `${section.code}-xx`} | ${section.part}`;
+
+      const isEarthingSwitch =
+        item.baseShape?.toUpperCase() === 'EARTHING_SWITCH' ||
+        item.name.toLowerCase().includes('erdungsschalter');
+      const pinCount = isEarthingSwitch ? 1 : Math.max(1, Math.min(4, item.pinCount ?? 2));
+      const rawLabels = item.defaultLabels ?? (pinCount === 2 ? ['1', '2'] : ['1', '2', '3']);
+      const tempPins = buildMultiPolePins(pinCount, rawLabels);
+      const cleanLabels = normalizePinLabels(tempPins, refText, item.name);
+      const pins = buildMultiPolePins(pinCount, cleanLabels);
+      const bmk = normalizeIec81346BmkPrefix(item.bmkPrefix, refText, item.name);
+      const svg = composeIecPrimitiveSvg(
+        item.baseShape,
+        item.actuator,
+        bmk,
+        pinCount,
+        item.qualifier,
+        refText,
+        item.name,
+      );
 
       const symbol: SymbolDefinition = {
         id: safeId,

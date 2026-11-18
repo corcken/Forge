@@ -19,7 +19,9 @@ export const AUTOMATION_AND_TERMINAL_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00742 | 06-14-02 | Teil 06',
     bmkPrefix: 'Q',
     pins: twoPinsVertical('1', '2'),
-    svgContent: composeIecPrimitiveSvg('CONVERTER_BOX', 'SEMICONDUCTOR', 'Q', 2),
+    svgContent: svgWrap16(
+      '<line x1="8" y1="0" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="16"/><rect x="3" y="3" width="10" height="10"/><path d="M5.5 6h5L8 9.8z"/><line x1="5.5" y1="9.8" x2="10.5" y2="9.8"/><path d="M9.2 9.8l1.6 1.6"/>',
+    ),
   }),
   buildSymbol({
     id: 'SYM_SSR_POLE',
@@ -85,7 +87,9 @@ export const AUTOMATION_AND_TERMINAL_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00744 | 06-14-03 | Teil 06',
     bmkPrefix: 'G',
     pins: twoPinsVertical('L', 'N'),
-    svgContent: composeIecPrimitiveSvg('CONVERTER_BOX', 'NONE', 'G', 2),
+    svgContent: svgWrap16(
+      '<line x1="8" y1="0" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="16"/><rect x="3" y="3" width="10" height="10"/><line x1="3" y1="13" x2="13" y2="3"/><text x="5.2" y="7" font-size="3" fill="currentColor">~</text><text x="9.5" y="11.5" font-size="3" fill="currentColor">=</text>',
+    ),
   }),
   buildSymbol({
     id: 'SYM_UPS_BLOCK',

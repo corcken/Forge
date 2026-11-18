@@ -157,3 +157,104 @@ export function transformSvgPathD(d: string): string {
   }
   return out.join(' ');
 }
+
+const VECTOR_GLYPHS: Record<string, string> = {
+  A: 'M0 1L.5 0 1 1M.2 .65H.8',
+  B: 'M0 0V1H.7L.9 .8V.6L.7 .5H0M.7 .5L.9 .35V.15L.7 0H0',
+  C: 'M.9 .15L.7 0H.2L0 .2V.8L.2 1H.7L.9 .85',
+  D: 'M0 0V1H.6L.9 .75V.25L.6 0H0',
+  E: 'M.9 0H0V1H.9M0 .5H.7',
+  F: 'M.9 0H0V1M0 .5H.7',
+  G: 'M.9 .15L.7 0H.2L0 .2V.8L.2 1H.8V.55H.5',
+  H: 'M0 0V1M.9 0V1M0 .5H.9',
+  I: 'M.2 0H.7M.45 0V1M.2 1H.7',
+  J: 'M.8 0V.8L.6 1H.2L0 .8',
+  K: 'M0 0V1M.9 0L0 .55 .9 1',
+  L: 'M0 0V1H.9',
+  M: 'M0 1V0L.45 .6 .9 0V1',
+  N: 'M0 1V0L.9 1V0',
+  O: 'M.2 0H.7L.9 .2V.8L.7 1H.2L0 .8V.2Z',
+  P: 'M0 1V0H.7L.9 .2V.4L.7 .55H0',
+  Q: 'M.2 0H.7L.9 .2V.8L.7 1H.2L0 .8V.2ZM.55 .65L.95 1.05',
+  R: 'M0 1V0H.7L.9 .2V.4L.7 .55H0M.55 .55L.9 1',
+  S: 'M.9 .15L.7 0H.2L0 .2V.4L.9 .6V.85L.7 1H.2L0 .85',
+  T: 'M0 0H.9M.45 0V1',
+  U: 'M0 0V.8L.2 1H.7L.9 .8V0',
+  V: 'M0 0L.45 1 .9 0',
+  W: 'M0 0L.22 1 .45 .4 .68 1 .9 0',
+  X: 'M0 0L.9 1M.9 0L0 1',
+  Y: 'M0 0L.45 .5V1M.9 0L.45 .5',
+  Z: 'M0 0H.9L0 1H.9',
+  '0': 'M.2 0H.7L.9 .2V.8L.7 1H.2L0 .8V.2Z',
+  '1': 'M.2 .2L.5 0V1M.2 1H.8',
+  '2': 'M0 .2L.2 0H.7L.9 .2V.4L0 1H.9',
+  '3': 'M0 .15L.2 0H.7L.9 .2V.4L.6 .5 .9 .65V.85L.7 1H.2L0 .85',
+  '4': 'M.7 1V0L0 .65H.9',
+  '5': 'M.9 0H0V.45H.7L.9 .65V.85L.7 1H.1',
+  '6': 'M.8 0H.2L0 .2V.85L.2 1H.7L.9 .8V.6L.7 .45H0',
+  '7': 'M0 0H.9L.3 1',
+  '8': 'M.2 0H.7L.9 .2V.35L.7 .5H.2L0 .35V.2ZM.2 .5L0 .65V.85L.2 1H.7L.9 .85V.65L.7 .5',
+  '9': 'M.1 1H.7L.9 .8V.2L.7 0H.2L0 .2V.4L.2 .55H.9',
+  '+': 'M.45 .2V.8M.15 .5H.75',
+  '-': 'M.15 .5H.75',
+  '=': 'M.1 .35H.85M.1 .65H.85',
+  '~': 'M0 .55L.25 .3 .65 .7 .9 .45',
+  '>': 'M.1 .2L.8 .5 .1 .8',
+  '<': 'M.8 .2L.1 .5 .8 .8',
+  '/': 'M.1 1L.8 0',
+  'θ': 'M.2 0H.7L.9 .25V.75L.7 1H.2L0 .75V.25ZM0 .5H.9',
+  'φ': 'M.45 0V1M.2 .25H.7L.9 .45V.6L.7 .75H.2L0 .6V.45Z',
+  '°': 'M.3 0H.6V.3H.3Z',
+  'Δ': 'M.45 0L.9 1H0Z',
+  'Ω': 'M0 1H.3V.8L.1 .5V.2L.3 0H.6L.8 .2V.5L.6 .8V1H.9',
+};
+
+/**
+ * Wandelt ein kurzes SVG-Text-Label (`A`, `V`, `kWh`, `U<`, `3~`, `θ`, `DI` usw.)
+ * in skalierte Vektor-Linienzuege fuer `svgPath` um.
+ */
+export function renderVectorTextPath(content: string, x: number, y: number, fontSize: number): string {
+  const h = Math.max(4, fontSize * 0.72);
+  const w = h * 0.62;
+  const step = w * 1.25;
+  const topY = round2(y - h);
+  const parts: string[] = [];
+
+  for (let idx = 0; idx < content.length; idx++) {
+    const rawCh = content[idx]!;
+    const glyph = VECTOR_GLYPHS[rawCh] ?? VECTOR_GLYPHS[rawCh.toUpperCase()];
+    if (!glyph) continue;
+    const ox = round2(x + idx * step);
+    const tokens = glyph.match(/[MLHVZ]|-?(?:\d+\.?\d*|\.\d+)/g) || [];
+    let i = 0;
+    let cmd = '';
+    let cx = ox;
+    let cy = topY;
+    while (i < tokens.length) {
+      const t = tokens[i]!;
+      if (/^[MLHVZ]$/.test(t)) {
+        cmd = t;
+        i++;
+        if (cmd === 'Z') {
+          parts.push('Z');
+          continue;
+        }
+      }
+      if (cmd === 'M' || cmd === 'L') {
+        cx = round2(ox + Number(tokens[i++]) * w);
+        cy = round2(topY + Number(tokens[i++]) * h);
+        parts.push(cmd, String(cx), String(cy));
+        if (cmd === 'M') cmd = 'L';
+      } else if (cmd === 'H') {
+        cx = round2(ox + Number(tokens[i++]) * w);
+        parts.push('L', String(cx), String(cy));
+      } else if (cmd === 'V') {
+        cy = round2(topY + Number(tokens[i++]) * h);
+        parts.push('L', String(cx), String(cy));
+      } else {
+        i++;
+      }
+    }
+  }
+  return parts.join(' ');
+}

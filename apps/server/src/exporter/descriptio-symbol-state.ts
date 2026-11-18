@@ -2,9 +2,11 @@ import {
   type CompiledDescriptioSymbol,
   type DescriptioSymbolElement,
   fixGermanUmlauts,
+  renderVectorTextPath,
   resolveSymbolCategoryId,
   transformSvgPathD,
 } from './descriptio-symbol-compiler.js';
+import { normalizeIec81346BmkPrefix } from '../vault/seeds/symbol-svg-shapes.js';
 
 const SCALE = 4;
 const round2 = (n: number): number => Math.round(n * 100) / 100;
@@ -73,6 +75,9 @@ export function compileElementsToSvgPath(elements: DescriptioSymbolElement[]): s
     else if (el.type === 'POINT') {
       const px = Number(el.x), py = Number(el.y);
       paths.push(`M ${px - 1.5} ${py} A 1.5 1.5 0 1 0 ${px + 1.5} ${py} A 1.5 1.5 0 1 0 ${px - 1.5} ${py}`);
+    } else if (el.type === 'TEXT' && typeof el.content === 'string' && el.content.trim()) {
+      const tp = renderVectorTextPath(el.content.trim(), Number(el.x ?? 0), Number(el.y ?? 0), Number(el.fontSize ?? 8));
+      if (tp) paths.push(tp);
     }
   }
   return paths.join(' ').trim();
@@ -102,19 +107,20 @@ export function compileSymbolForDescriptio(raw: {
     const attrs = match[2] || '';
     const inner = match[3] || '';
     const dashed = attrs.includes('stroke-dasharray');
+    const filled = (getAttr(attrs, 'fill') ?? '') === 'currentColor';
     const id = `el-${elCounter++}`;
 
     if (tag === 'line') {
       elements.push({ type: 'LINE', id, x1: tx(getAttr(attrs, 'x1') ?? 0), y1: ty(getAttr(attrs, 'y1') ?? 0), x2: tx(getAttr(attrs, 'x2') ?? 0), y2: ty(getAttr(attrs, 'y2') ?? 0), dashed, strokeWidth: 1.2 });
     } else if (tag === 'rect') {
-      elements.push({ type: 'RECT', id, x: tx(getAttr(attrs, 'x') ?? 0), y: ty(getAttr(attrs, 'y') ?? 0), width: ts(getAttr(attrs, 'width') ?? 0), height: ts(getAttr(attrs, 'height') ?? 0), dashed, strokeWidth: 1.2 });
+      elements.push({ type: 'RECT', id, x: tx(getAttr(attrs, 'x') ?? 0), y: ty(getAttr(attrs, 'y') ?? 0), width: ts(getAttr(attrs, 'width') ?? 0), height: ts(getAttr(attrs, 'height') ?? 0), dashed, ...(filled ? { filled: true } : {}), strokeWidth: 1.2 });
     } else if (tag === 'circle') {
       const cx = tx(getAttr(attrs, 'cx') ?? 8), cy = ty(getAttr(attrs, 'cy') ?? 8), rawR = Number(getAttr(attrs, 'r') ?? 1);
-      if ((getAttr(attrs, 'fill') ?? '') === 'currentColor' && rawR <= 1.0) elements.push({ type: 'POINT', id, x: cx, y: cy });
-      else elements.push({ type: 'CIRCLE', id, cx, cy, r: ts(rawR), dashed, strokeWidth: 1.2 });
+      if (filled && rawR <= 1.0) elements.push({ type: 'POINT', id, x: cx, y: cy });
+      else elements.push({ type: 'CIRCLE', id, cx, cy, r: ts(rawR), dashed, ...(filled ? { filled: true } : {}), strokeWidth: 1.2 });
     } else if (tag === 'path') {
       const rawD = getAttr(attrs, 'd') ?? '';
-      if (rawD) elements.push({ type: 'PATH', id, d: transformSvgPathD(rawD), strokeWidth: 1.2 });
+      if (rawD) elements.push({ type: 'PATH', id, d: transformSvgPathD(rawD), ...(filled ? { filled: true } : {}), strokeWidth: 1.2 });
     } else if (tag === 'text') {
       const content = decodeXmlEntities(inner.trim());
       if (content) {
@@ -141,7 +147,7 @@ export function compileSymbolForDescriptio(raw: {
     return { pinIndex: p.pinIndex ?? idx + 1, name: label, defaultLabel: label, localX, localY, xMm, yMm, direction };
   });
 
-  const rawPrefix = (raw.bmkPrefix || 'K').trim().replace(/^[-+]/, '');
+  const rawPrefix = normalizeIec81346BmkPrefix(raw.bmkPrefix, raw.iec60617Ref, cleanName);
   const defaultBmkPrefix = `-${rawPrefix}`;
   const isTerminal = (rawPrefix.charAt(0).toUpperCase() || 'K') === 'X';
   const width = 64, height = 64;

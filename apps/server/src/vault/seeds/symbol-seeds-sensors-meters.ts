@@ -81,7 +81,9 @@ export const SENSORS_METERS_AND_ACTUATOR_SYMBOLS: readonly SymbolDefinition[] = 
     iec60617Ref: 'S00297 | 07-13-15 | Teil 07',
     bmkPrefix: 'Q',
     pins: twoPinsVertical('1', '2'),
-    svgContent: composeIecPrimitiveSvg('CB_POLE', 'THERMAL_MAGNETIC', 'Q', 2),
+    svgContent: svgWrap16(
+      '<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4.5" y2="4"/><path d="M6.8 2.8l2.4 2.4m0-2.4l-2.4 2.4"/><rect x="1" y="5.5" width="3.2" height="6"/><path d="M1.6 7.5h2M1.6 9.5l1.5 1"/><line x1="4.2" y1="8.5" x2="6.2" y2="8.5" stroke-dasharray="1 1"/><circle cx="8" cy="13.8" r="1.4"/>',
+    ),
   }),
   buildSymbol({
     id: 'SYM_AFDD_POLE',
@@ -108,7 +110,7 @@ export const SENSORS_METERS_AND_ACTUATOR_SYMBOLS: readonly SymbolDefinition[] = 
     bmkPrefix: 'T',
     pins: twoPinsVertical('S1', 'S2'),
     svgContent: svgWrap16(
-      '<line x1="8" y1="0" x2="8" y2="16"/><circle cx="8" cy="8" r="4"/><line x1="12" y1="6" x2="15" y2="6"/><line x1="12" y1="10" x2="15" y2="10"/>',
+      '<line x1="8" y1="0" x2="8" y2="16"/><circle cx="8" cy="8" r="4"/><line x1="6.5" y1="7" x2="9.5" y2="9"/><line x1="6.5" y1="9" x2="9.5" y2="11"/>',
     ),
   }),
   buildSymbol({
@@ -144,7 +146,7 @@ export const SENSORS_METERS_AND_ACTUATOR_SYMBOLS: readonly SymbolDefinition[] = 
     bmkPrefix: 'L',
     pins: twoPinsVertical('1', '2'),
     svgContent: svgWrap16(
-      '<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="16"/><rect x="5" y="4" width="6" height="8" fill="currentColor"/><line x1="3.5" y1="4" x2="3.5" y2="12"/>',
+      '<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="16"/><rect x="5" y="4" width="6" height="8" fill="currentColor"/><line x1="6.5" y1="4" x2="6.5" y2="12"/><line x1="8" y1="4" x2="8" y2="12"/><line x1="9.5" y1="4" x2="9.5" y2="12"/><line x1="3.5" y1="4" x2="3.5" y2="12"/>',
     ),
   }),
   buildSymbol({

@@ -109,7 +109,7 @@ export const CONTACT_AND_SWITCH_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00275 | 07-12-06 | Teil 07',
     bmkPrefix: 'S',
     pins: twoPinsVertical('11', '12'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="5"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="6" y2="5"/><line x1="6" y1="5" x2="9" y2="5"/><path d="M4 2h4v2H4z"/><line x1="6" y1="4" x2="6" y2="7"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="5"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="6" y2="5"/><line x1="6" y1="5" x2="9" y2="5"/><line x1="3" y1="8.5" x2="6.8" y2="8.5" stroke-dasharray="1 1"/><path d="M3 6v5M3 6a2.5 2.5 0 0 0-2 2.5 2.5 2.5 0 0 0 2 2.5z"/><path d="M4.2 8.5l.6-1 .6 1"/>'),
   }),
   buildSymbol({
     id: 'SYM_SWITCH_POLE',
@@ -125,7 +125,7 @@ export const CONTACT_AND_SWITCH_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00285 | 07-13-02 | Teil 07',
     bmkPrefix: 'Q',
     pins: twoPinsVertical('1', '2'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4" y2="4"/><line x1="2" y1="4" x2="6" y2="4"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4.5" y2="4"/><line x1="6.2" y1="4" x2="9.8" y2="4"/>'),
   }),
   buildSymbol({
     id: 'SYM_CB_POLE',
@@ -133,7 +133,7 @@ export const CONTACT_AND_SWITCH_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00287 | 07-13-05 | Teil 07',
     bmkPrefix: 'Q',
     pins: twoPinsVertical('1', '2'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4" y2="4"/><path d="M2 3l2 2m0-2l-2 2"/><rect x="6" y="8" width="4" height="4"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4.5" y2="4"/><path d="M6.8 2.8l2.4 2.4m0-2.4l-2.4 2.4"/><rect x="1.2" y="6.5" width="3" height="4"/><line x1="4.2" y1="8.5" x2="6.2" y2="8.5" stroke-dasharray="1 1"/>'),
   }),
   buildSymbol({
     id: 'SYM_MSS_POLE',
@@ -141,7 +141,7 @@ export const CONTACT_AND_SWITCH_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00290 | 07-13-08 | Teil 07',
     bmkPrefix: 'Q',
     pins: twoPinsVertical('1', '2'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4" y2="4"/><path d="M2 3l2 2m0-2l-2 2"/><path d="M6 7h4v3H6z"/><path d="M6 10l2 2 2-2"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4.5" y2="4"/><path d="M6.8 2.8l2.4 2.4m0-2.4l-2.4 2.4"/><rect x="1" y="5.5" width="3.2" height="6"/><path d="M1.6 7.5h2M1.6 9.5l1.5 1"/><line x1="4.2" y1="8.5" x2="6.2" y2="8.5" stroke-dasharray="1 1"/>'),
   }),
   buildSymbol({
     id: 'SYM_RCD_POLE',
@@ -149,7 +149,7 @@ export const CONTACT_AND_SWITCH_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00296 | 07-13-14 | Teil 07',
     bmkPrefix: 'Q',
     pins: twoPinsVertical('1', '2'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4" y2="4"/><circle cx="6" cy="9" r="2.5"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="16" x2="8" y2="12"/><line x1="8" y1="12" x2="4.5" y2="4"/><circle cx="8" cy="13.5" r="1.6"/><path d="M6.4 13.5H3V8.5h3.2" stroke-dasharray="1 1"/>'),
   }),
   buildSymbol({
     id: 'SYM_OVERLOAD_THERMAL_POLE',

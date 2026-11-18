@@ -103,7 +103,7 @@ export function exportSymbols(
   filter?: SymbolFilter,
 ): SymbolExportResult {
   const symbols = symbolRepo.listSymbols(filter);
-  const compiled = symbols.map((sym) =>
+  const rawCompiled = symbols.map((sym) =>
     compileSymbolForDescriptio({
       id: sym.id,
       name: sym.name,
@@ -120,6 +120,20 @@ export function exportSymbols(
       })),
     }),
   );
+
+  // Verhindere Namens-Kollisionen beim Descriptio-Import (Abgleich ueber { name, libraryId })
+  const seenNames = new Set<string>();
+  const compiled = rawCompiled.map((item) => {
+    if (!seenNames.has(item.name)) {
+      seenNames.add(item.name);
+      return item;
+    }
+    const refToken =
+      item.iec60617Ref?.match(/\b(\d{2}-\d{2}-\d{2}|\d{2}-\d{2}|S\d{5})/)?.[1] ?? item.id;
+    const uniqueName = `${item.name} (${refToken})`;
+    seenNames.add(uniqueName);
+    return { ...item, name: uniqueName };
+  });
 
   const categories = buildIecSymbolCategories();
   const stamp = new Date().toISOString().replace(/[:.]/gu, '-');

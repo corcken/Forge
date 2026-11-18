@@ -16,7 +16,7 @@ export const COIL_AND_POWER_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00308 | 07-15-07 | Teil 07',
     bmkPrefix: 'K',
     pins: twoPinsVertical('A1', 'A2'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="16"/><rect x="4" y="4" width="8" height="8"/><path d="M4 4h3v8H4z" fill="currentColor"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="4"/><line x1="8" y1="12" x2="8" y2="16"/><rect x="4" y="4" width="8" height="8"/><path d="M4 4h3v8H4z" fill="currentColor"/><line x1="5" y1="4" x2="5" y2="12"/><line x1="6" y1="4" x2="6" y2="12"/><line x1="7" y1="4" x2="7" y2="12"/>'),
   }),
   buildSymbol({
     id: 'SYM_COIL_TOFF',
@@ -72,7 +72,7 @@ export const COIL_AND_POWER_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00161 | 07-21-01 | Teil 07',
     bmkPrefix: 'F',
     pins: twoPinsVertical('1', '2'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="16"/><rect x="5" y="3" width="6" height="10" fill="#ffffff" stroke="currentColor"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="16"/><rect x="5" y="3" width="6" height="10"/>'),
   }),
   buildSymbol({
     id: 'SYM_FUSE_SWITCH_POLE',
@@ -80,7 +80,7 @@ export const COIL_AND_POWER_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00165 | 07-21-05 | Teil 07',
     bmkPrefix: 'Q',
     pins: twoPinsVertical('1', '2'),
-    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="16"/><line x1="8" y1="13" x2="4" y2="4"/><line x1="2" y1="4" x2="6" y2="4"/><rect x="5.5" y="6" width="5" height="6"/>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="16"/><line x1="8" y1="13" x2="4.5" y2="3"/><line x1="6.2" y1="3" x2="9.8" y2="3"/><path d="M4.2 5.5l2.6-.9 1.7 5-2.6.9z"/>'),
   }),
   buildSymbol({
     id: 'SYM_SPD_POLE',
@@ -136,7 +136,7 @@ export const COIL_AND_POWER_SYMBOLS: readonly SymbolDefinition[] = [
     iec60617Ref: 'S00745 | 06-14-03 | Teil 06',
     bmkPrefix: 'G',
     pins: twoPinsVertical('+', '-'),
-    svgContent: svgWrap16('<rect x="3" y="3" width="10" height="10"/><line x1="3" y1="3" x2="13" y2="13"/><text x="5" y="7" font-size="3" fill="currentColor">~</text><text x="9" y="11" font-size="3" fill="currentColor">=</text>'),
+    svgContent: svgWrap16('<line x1="8" y1="0" x2="8" y2="3"/><line x1="8" y1="13" x2="8" y2="16"/><rect x="3" y="3" width="10" height="10"/><line x1="3" y1="13" x2="13" y2="3"/><text x="5.2" y="7" font-size="3" fill="currentColor">~</text><text x="9.5" y="11.5" font-size="3" fill="currentColor">=</text>'),
   }),
   buildSymbol({
     id: 'SYM_LED_INDICATOR',
@@ -164,6 +164,6 @@ export const COIL_AND_POWER_SYMBOLS: readonly SymbolDefinition[] = [
       { pinIndex: 2, defaultLabel: 'BU/3', xMm: 12, yMm: 0, direction: 'TOP' },
       { pinIndex: 3, defaultLabel: 'BK/4', xMm: 8, yMm: 16, direction: 'BOTTOM' },
     ],
-    svgContent: svgWrap16('<rect x="4" y="4" width="8" height="8"/><path d="M6 8h4M8 6v4"/><line x1="8" y1="12" x2="8" y2="16"/>'),
+    svgContent: svgWrap16('<line x1="4" y1="0" x2="4" y2="3"/><line x1="12" y1="0" x2="12" y2="3"/><line x1="8" y1="13" x2="8" y2="16"/><rect x="3" y="3" width="10" height="10"/><path d="M8 3.5L12.5 8 8 12.5 3.5 8Z"/><line x1="7" y1="6" x2="7" y2="10"/><line x1="9" y1="6" x2="9" y2="10"/>'),
   }),
 ];
