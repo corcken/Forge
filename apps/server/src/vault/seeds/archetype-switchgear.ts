@@ -19,7 +19,8 @@ import {
 function symbolForPrefix(prefix: string): string {
   if (prefix === 'MAIN_SWITCH') return 'SYM_DISCONNECTOR_POLE';
   if (prefix === 'MSS') return 'SYM_MSS_POLE';
-  if (['MCCB', 'MCB', 'RCBO'].includes(prefix)) return 'SYM_CB_POLE';
+  if (prefix === 'RCBO') return 'SYM_RCBO_POLE';
+  if (['MCCB', 'MCB'].includes(prefix)) return 'SYM_CB_POLE';
   if (prefix === 'RCD') return 'SYM_RCD_POLE';
   if (prefix === 'OVERLOAD_RELAY') return 'SYM_OVERLOAD_THERMAL_POLE';
   if (prefix === 'FUSE_HOLDER') return 'SYM_FUSE_POLE';
@@ -36,6 +37,7 @@ function expandPoleFamily(params: {
   poles: readonly string[];
   auxCombos: readonly AuxCombo[];
   withCoil?: boolean;
+  auxSymbols?: { no?: string; nc?: string; co?: string };
 }): IecArchetype[] {
   const result: IecArchetype[] = [];
   const symbolId = symbolForPrefix(params.prefix);
@@ -46,7 +48,7 @@ function expandPoleFamily(params: {
       const groups = [
         ...(params.withCoil ? [coil('COIL_1', params.bmk)] : []),
         ...mainPoleGroups(poleSpec, symbolId),
-        ...buildAuxGroups(combo),
+        ...buildAuxGroups(combo, params.auxSymbols),
       ];
       result.push(
         archetype(
@@ -149,6 +151,7 @@ export function buildSwitchgearAndProtectionArchetypes(): IecArchetype[] {
         { no: 0, nc: 0 }, { no: 1, nc: 1 }, { no: 1, nc: 0 }, { no: 0, nc: 1 },
         { no: 0, nc: 0, co: 1 }, { no: 2, nc: 1 }, { no: 1, nc: 2 },
       ],
+      auxSymbols: { no: 'SYM_NO_FAULT_SIGNAL', nc: 'SYM_NC_THERMAL' },
     }),
   );
 
@@ -178,7 +181,7 @@ export function buildSwitchgearAndProtectionArchetypes(): IecArchetype[] {
       category: 'PROTECTION',
       bmk: 'F',
       mount: 'DIN_RAIL',
-      poles: ['1P_N', '2P', '3P_N', '4P'],
+      poles: ['1P_N', '2P', '3P', '3P_N', '4P'],
       auxCombos: AUX_COMBOS_COMPACT,
     }),
   );
@@ -237,7 +240,7 @@ export function buildSwitchgearAndProtectionArchetypes(): IecArchetype[] {
           'SWITCHGEAR',
           'Q',
           'DIN_RAIL',
-          [...mainPoleGroups('3P'), ...buildAuxGroups(combo)],
+          [...mainPoleGroups('3P', 'SYM_SOFTSTARTER_POLE'), ...buildAuxGroups(combo)],
         ),
       );
     }

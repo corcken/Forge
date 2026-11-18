@@ -44,7 +44,7 @@ export function buildPowerPilotPlcAndCables(): IecArchetype[] {
             'G',
             'DIN_RAIL',
             [
-              group('INPUT_MAINS', 'TERMINAL_PASS', 'NONE', inPins, { bmkPrefix: 'G', symbolDefinitionId: 'SYM_TERMINAL_PASS' }),
+              group('INPUT_MAINS', 'TERMINAL_PASS', 'NONE', inPins, { bmkPrefix: 'G', symbolDefinitionId: 'SYM_PSU_INPUT' }),
               group('OUTPUT_DC', 'POWER_OUT', 'ISOLATED_TRANSFORM', outPins, { bmkPrefix: 'G', symbolDefinitionId: 'SYM_PSU_OUTPUT' }),
             ],
           ),
@@ -110,9 +110,10 @@ export function buildPowerPilotPlcAndCables(): IecArchetype[] {
   ], { symbolDefinitionId: 'SYM_LED_INDICATOR' });
   for (const combo of pilotCombos) {
     const { idSuffix, nameSuffix } = formatAuxLabel(combo);
+    const pilotAux = buildAuxGroups(combo, { no: 'SYM_PUSHBUTTON_NO', nc: 'SYM_PUSHBUTTON_NC' });
     list.push(
-      archetype(`PILOT${idSuffix}`, `Befehlsgeraet / Taster${nameSuffix}`, 'SWITCHGEAR', 'S', 'DOOR', buildAuxGroups(combo)),
-      archetype(`PILOT${idSuffix}_LED`, `Leuchtdrucktaster${nameSuffix} + LED`, 'SWITCHGEAR', 'S', 'DOOR', [...buildAuxGroups(combo), ledGroup]),
+      archetype(`PILOT${idSuffix}`, `Befehlsgeraet / Taster${nameSuffix}`, 'SWITCHGEAR', 'S', 'DOOR', pilotAux),
+      archetype(`PILOT${idSuffix}_LED`, `Leuchtdrucktaster${nameSuffix} + LED`, 'SWITCHGEAR', 'S', 'DOOR', [...pilotAux, ledGroup]),
     );
   }
   list.push(
@@ -123,11 +124,11 @@ export function buildPowerPilotPlcAndCables(): IecArchetype[] {
 
   // 3. Sensoren, Positionsschalter, Druckwaechter & SPS-Baugruppen
   list.push(
-    archetype('PRESSURE_SWITCH_3P', 'Druckwaechter 3-polig', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', mainPoleGroups('3P')),
-    archetype('PRESSURE_SWITCH_1NO_1NC', 'Druckwaechter 1S + 1OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 1, nc: 1 })),
-    archetype('POSITION_SWITCH_1NO_1NC', 'Positionsschalter / Sicherheitsschalter 1S + 1OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 1, nc: 1 })),
-    archetype('POSITION_SWITCH_2NC', 'Sicherheitspositionsschalter 2OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 0, nc: 2 })),
-    archetype('POSITION_SWITCH_1NO_2NC', 'Sicherheitspositionsschalter 1S + 2OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 1, nc: 2 })),
+    archetype('PRESSURE_SWITCH_3P', 'Druckwaechter 3-polig', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', mainPoleGroups('3P', 'SYM_PRESSURE_NO')),
+    archetype('PRESSURE_SWITCH_1NO_1NC', 'Druckwaechter 1S + 1OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 1, nc: 1 }, { no: 'SYM_PRESSURE_NO', nc: 'SYM_PRESSURE_NC' })),
+    archetype('POSITION_SWITCH_1NO_1NC', 'Positionsschalter / Sicherheitsschalter 1S + 1OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 1, nc: 1 }, { no: 'SYM_LIMIT_NO', nc: 'SYM_LIMIT_NC' })),
+    archetype('POSITION_SWITCH_2NC', 'Sicherheitspositionsschalter 2OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 0, nc: 2 }, { no: 'SYM_LIMIT_NO', nc: 'SYM_LIMIT_NC' })),
+    archetype('POSITION_SWITCH_1NO_2NC', 'Sicherheitspositionsschalter 1S + 2OE', 'SWITCHGEAR', 'B', 'MOUNTING_PLATE', buildAuxGroups({ no: 1, nc: 2 }, { no: 'SYM_LIMIT_NO', nc: 'SYM_LIMIT_NC' })),
   );
   for (const sType of [
     '3WIRE_PNP_NO', '3WIRE_PNP_NC', '3WIRE_NPN_NO', '3WIRE_NPN_NC',
@@ -146,6 +147,7 @@ export function buildPowerPilotPlcAndCables(): IecArchetype[] {
   }
 
   for (const ioKind of ['DI', 'DO', 'AI', 'AO'] as const) {
+    const plcSym = `SYM_PLC_${ioKind}`;
     for (const ch of [2, 4, 8, 16, 32]) {
       const pins: PinTemplate[] = [];
       for (let c = 1; c <= ch; c += 1) {
@@ -153,7 +155,7 @@ export function buildPowerPilotPlcAndCables(): IecArchetype[] {
       }
       list.push(
         archetype(`PLC_${ioKind}_${ch}CH`, `SPS-Modul ${ioKind} ${ch}-Kanal`, 'PLC', 'K', 'DIN_RAIL', [
-          group(`${ioKind}_GROUP`, 'TERMINAL_PASS', 'NONE', pins, { symbolDefinitionId: 'SYM_PLC_IO_CHANNEL' }),
+          group(`${ioKind}_GROUP`, 'TERMINAL_PASS', 'NONE', pins, { symbolDefinitionId: plcSym }),
         ]),
       );
     }
@@ -213,14 +215,14 @@ export function buildPowerPilotPlcAndCables(): IecArchetype[] {
       group('PASS_1', 'TERMINAL_PASS', 'INTERNAL_BRIDGE', [
         pin('1', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
         pin('2', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'ANY'),
-      ], { symbolDefinitionId: 'SYM_TERMINAL_PASS' }),
+      ], { symbolDefinitionId: 'SYM_BUSBAR_PASS' }),
     ]),
     archetype('BUSBAR_3P', 'Sammelschiene / Phasenschiene 3-polig', 'TERMINAL', 'W', 'DIN_RAIL', [
       group('BUS_3P', 'TERMINAL_PASS', 'INTERNAL_BRIDGE', [
         pin('L1', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'AC'),
         pin('L2', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'AC'),
         pin('L3', 'TERMINAL_PASS', 'BIDIRECTIONAL', 'AC'),
-      ], { symbolDefinitionId: 'SYM_TERMINAL_PASS' }),
+      ], { symbolDefinitionId: 'SYM_BUSBAR_PASS' }),
     ]),
     archetype('SURGE_SUPPRESSOR_2PIN', 'Schutzbeschaltung / Varistor / RC-Glied', 'PROTECTION', 'F', 'DIN_RAIL', [
       group('SUPP_1', 'TERMINAL_PASS', 'POTENTIAL_SINK', [

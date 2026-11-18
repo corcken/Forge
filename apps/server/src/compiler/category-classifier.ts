@@ -37,8 +37,8 @@ export function classifyPartCategory(input: CategoryClassificationInput): Catego
   // Fallback, falls ein generierter Slug nicht exakt gefunden wurde
   const fallback = CATEGORY_MAP.get('08_gehaeuse_mechanik.zubehoer_mechanik.zubehoer_allgemein')!;
   return {
-    categoryId: deterministicCategoryUuid(slug),
-    categorySlug: slug,
+    categoryId: fallback.id,
+    categorySlug: fallback.slug,
     categoryPath: fallback.pathLabel,
   };
 }

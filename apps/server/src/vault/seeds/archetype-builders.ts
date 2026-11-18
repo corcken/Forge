@@ -164,7 +164,13 @@ export function formatAuxLabel(combo: AuxCombo): { idSuffix: string; nameSuffix:
 }
 
 /** Erzeugt normgerechte Hilfskontakt-Gruppen (13-14, 21-22, 11-12-14 etc.). */
-export function buildAuxGroups(combo: AuxCombo): FunctionGroupTemplate[] {
+export function buildAuxGroups(
+  combo: AuxCombo,
+  auxSymbols?: { no?: string; nc?: string; co?: string },
+): FunctionGroupTemplate[] {
+  const noSym = auxSymbols?.no ?? 'SYM_NO_CONTACT';
+  const ncSym = auxSymbols?.nc ?? 'SYM_NC_CONTACT';
+  const coSym = auxSymbols?.co ?? 'SYM_CO_CONTACT';
   const groups: FunctionGroupTemplate[] = [];
   let pos = 1;
   for (let i = 1; i <= combo.no; i += 1) {
@@ -177,7 +183,7 @@ export function buildAuxGroups(combo: AuxCombo): FunctionGroupTemplate[] {
           pin(`${pos}3`, 'NO_CONTACT', 'SOURCE', 'ANY'),
           pin(`${pos}4`, 'NO_CONTACT', 'SINK', 'ANY'),
         ],
-        { symbolDefinitionId: 'SYM_NO_CONTACT' },
+        { symbolDefinitionId: noSym },
       ),
     );
     pos += 1;
@@ -192,7 +198,7 @@ export function buildAuxGroups(combo: AuxCombo): FunctionGroupTemplate[] {
           pin(`${pos}1`, 'NC_CONTACT', 'SOURCE', 'ANY'),
           pin(`${pos}2`, 'NC_CONTACT', 'SINK', 'ANY'),
         ],
-        { symbolDefinitionId: 'SYM_NC_CONTACT' },
+        { symbolDefinitionId: ncSym },
       ),
     );
     pos += 1;
@@ -208,7 +214,7 @@ export function buildAuxGroups(combo: AuxCombo): FunctionGroupTemplate[] {
           pin(`${pos}2`, 'CHANGEOVER_CONTACT', 'SINK', 'ANY'),
           pin(`${pos}4`, 'CHANGEOVER_CONTACT', 'SINK', 'ANY'),
         ],
-        { symbolDefinitionId: 'SYM_CO_CONTACT' },
+        { symbolDefinitionId: coSym },
       ),
     );
     pos += 1;

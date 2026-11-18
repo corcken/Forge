@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { assignSymbolsToRun } from '../../compiler/symbol-classifier.js';
 import { buildRunTree } from '../../pipeline/run-tree.js';
 import { publicProcedure, router } from '../trpc.js';
 
@@ -18,6 +19,13 @@ export const compilerRouter = router({
     .input(runIdInput.extend({ partIds: z.array(z.string().min(1)).optional() }))
     .mutation(({ ctx, input }) =>
       ctx.services.compileService.compileParts(input.runId, input.partIds),
+    ),
+
+  /** Weist allen validierten Artikeln eines Runs die praezisesten IEC-Symbole zu. */
+  assignSymbols: publicProcedure
+    .input(runIdInput)
+    .mutation(({ ctx, input }) =>
+      assignSymbolsToRun(input.runId, ctx.services.runManager, ctx.services.globalDb),
     ),
 
   /** Liefert das flach kompilierte Ergebnis eines Artikels zur Inspektion. */

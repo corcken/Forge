@@ -39,6 +39,16 @@ function buildRelaysAndAuxBlocks(): IecArchetype[] {
     { no: 4, nc: 2 },
   ];
   for (const fam of relayFamilies) {
+    const coilSym =
+      fam.prefix === 'TIME_RELAY'
+        ? 'SYM_COIL_MULTIFUNC'
+        : fam.prefix === 'SAFETY_RELAY'
+          ? 'SYM_SAFETY_RELAY_COIL'
+          : 'SYM_COIL_STD';
+    const auxSyms =
+      fam.prefix === 'TIME_RELAY'
+        ? { no: 'SYM_NO_DELAY_ON', nc: 'SYM_NC_DELAY_ON' }
+        : undefined;
     for (const combo of relayCombos) {
       const { idSuffix, nameSuffix } = formatAuxLabel(combo);
       list.push(
@@ -48,7 +58,7 @@ function buildRelaysAndAuxBlocks(): IecArchetype[] {
           'SWITCHGEAR',
           'K',
           'DIN_RAIL',
-          [coil('COIL_1', 'K'), ...buildAuxGroups(combo)],
+          [coil('COIL_1', 'K', 'ANY', coilSym), ...buildAuxGroups(combo, auxSyms)],
         ),
       );
     }
@@ -149,7 +159,16 @@ function buildTerminals(): IecArchetype[] {
     { key: 'DIODE', label: 'Diodenklemme' },
   ] as const;
   for (const spec of specialTypes) {
-    const symId = spec.key === 'DISCONNECT' ? 'SYM_TERMINAL_DISCONNECT' : spec.key === 'FUSE' ? 'SYM_FUSE_POLE' : 'SYM_TERMINAL_PASS';
+    const symId =
+      spec.key === 'DISCONNECT'
+        ? 'SYM_TERMINAL_DISCONNECT'
+        : spec.key === 'FUSE'
+          ? 'SYM_FUSE_TERMINAL'
+          : spec.key === 'N'
+            ? 'SYM_N_DISCONNECT_TERMINAL'
+            : spec.key === 'DIODE'
+              ? 'SYM_DIODE_TERMINAL'
+              : 'SYM_TERMINAL_PASS';
     for (const levels of [1, 2, 3]) {
       for (const pinsCount of [2, 3, 4]) {
         const pins: PinTemplate[] = [];
