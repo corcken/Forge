@@ -132,7 +132,7 @@ export class SymbolHarvester {
       const pinCount = Math.max(1, Math.min(4, item.pinCount ?? 2));
       const labels = item.defaultLabels ?? (pinCount === 2 ? ['1', '2'] : ['1', '2', '3']);
       const pins = buildMultiPolePins(pinCount, labels);
-      const bmk = (item.bmkPrefix || 'K').toUpperCase().slice(0, 2);
+      const bmk = (item.bmkPrefix || 'K').trim().replace(/^[-+]+/, '').toUpperCase().slice(0, 2) || 'K';
       const svg = composeIecPrimitiveSvg(item.baseShape, item.actuator, bmk, pinCount, item.qualifier);
 
       const refText = item.iec60617Ref?.includes('Teil')

@@ -62,6 +62,7 @@ export class SymbolRepository {
   /** Speichert oder aktualisiert ein Symbol. */
   upsertSymbol(symbol: SymbolDefinition): void {
     const validated = SymbolDefinitionSchema.parse(symbol);
+    const normalizedBmk = validated.bmkPrefix.trim().replace(/^[-+]+/, '').toUpperCase() || 'K';
     this.globalDb.db
       .prepare(
         `INSERT INTO symbol_library
@@ -82,7 +83,7 @@ export class SymbolRepository {
         id: validated.id,
         name: validated.name,
         iec_60617_ref: validated.iec60617Ref,
-        bmk_prefix: validated.bmkPrefix,
+        bmk_prefix: normalizedBmk,
         grid_base_mm: validated.gridBaseMm,
         svg_content: validated.svgContent,
         pins_json: JSON.stringify(validated.pins),

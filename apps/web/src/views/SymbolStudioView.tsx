@@ -1,19 +1,24 @@
 import { useState } from 'react';
-import { Layers, Sparkles, Search, RefreshCw } from 'lucide-react';
+import { Layers, Sparkles, Search, RefreshCw, Download, CheckCircle2, X } from 'lucide-react';
 import type { SymbolDefinition } from '@descriptio-forge/shared';
 import { trpc } from '../lib/trpc';
 import { ADMIN_TD, ADMIN_TH, ADMIN_TOOLBAR, BTN, INPUT } from '../lib/ui';
 import { HarvestModal } from './symbols/HarvestModal';
 import { SymbolInspectorPanel } from './symbols/SymbolInspectorPanel';
 
-const BMK_OPTIONS = ['ALL', 'K', 'Q', 'F', 'S', 'X', 'T', 'G', 'B', 'P', 'M', 'H'];
+const BMK_OPTIONS = ['ALL', 'K', 'Q', 'F', 'S', 'X', 'T', 'G', 'B', 'P', 'M', 'H', 'A', 'R', 'C', 'L', 'V', 'U', 'Y', 'E', 'W', 'Z'];
 const PART_OPTIONS = [
   { value: 'ALL', label: 'Alle Teile' },
+  { value: 'Teil 02', label: 'Teil 02 (Elemente/Antriebe)' },
   { value: 'Teil 03', label: 'Teil 03 (Klemmen/Leiter)' },
+  { value: 'Teil 04', label: 'Teil 04 (R, L, C Passiv)' },
+  { value: 'Teil 05', label: 'Teil 05 (Halbleiter/Opto)' },
   { value: 'Teil 06', label: 'Teil 06 (Motoren/Trafos)' },
   { value: 'Teil 07', label: 'Teil 07 (Schaltgeräte/Spulen)' },
   { value: 'Teil 08', label: 'Teil 08 (Melder/Messung)' },
+  { value: 'Teil 09', label: 'Teil 09 (Filter/Übertragung)' },
   { value: 'Teil 10', label: 'Teil 10 (SPS/Automation)' },
+  { value: 'Teil 11', label: 'Teil 11 (Gebäude/Installation)' },
 ];
 
 /** Symbol Studio: 24px High-Density E-CAD Symbolbibliothek nach IEC 60617. */
@@ -23,6 +28,7 @@ export function SymbolStudioView() {
   const [bmkFilter, setBmkFilter] = useState('ALL');
   const [partFilter, setPartFilter] = useState('ALL');
   const [isHarvestOpen, setIsHarvestOpen] = useState(false);
+  const [exportNotice, setExportNotice] = useState<string | null>(null);
 
   const utils = trpc.useUtils();
   const stats = trpc.symbols.stats.useQuery();
@@ -30,6 +36,17 @@ export function SymbolStudioView() {
     search: search || undefined,
     bmkPrefix: bmkFilter !== 'ALL' ? bmkFilter : undefined,
     iecPart: partFilter !== 'ALL' ? partFilter : undefined,
+  });
+
+  const exportSymbolsMutation = trpc.exporter.exportSymbols.useMutation({
+    onSuccess: (res) => {
+      setExportNotice(
+        `${res.symbolCount} Symbole (${res.categoryCount} Kategorien) nach ${res.filePath} exportiert.`,
+      );
+    },
+    onError: (err) => {
+      setExportNotice(`Export-Fehler: ${err.message}`);
+    },
   });
 
   const symbols: SymbolDefinition[] = list.data ?? [];
@@ -102,6 +119,22 @@ export function SymbolStudioView() {
           </button>
 
           <button
+            onClick={() =>
+              exportSymbolsMutation.mutate({
+                search: search || undefined,
+                bmkPrefix: bmkFilter !== 'ALL' ? bmkFilter : undefined,
+                iecPart: partFilter !== 'ALL' ? partFilter : undefined,
+              })
+            }
+            disabled={exportSymbolsMutation.isPending}
+            className={`${BTN} flex items-center gap-1 border-sky-500 bg-sky-50 font-semibold text-sky-800 hover:bg-sky-100 dark:bg-sky-950/40 dark:text-sky-300`}
+            title="Aktuell gefilterte oder alle Symbole ins Descriptio-Format exportieren"
+          >
+            <Download className="h-3 w-3" />
+            <span>{exportSymbolsMutation.isPending ? 'Exportiert...' : 'Descriptio-Export'}</span>
+          </button>
+
+          <button
             onClick={() => setIsHarvestOpen(true)}
             className={`${BTN} flex items-center gap-1 border-amber-500 bg-amber-50 font-semibold text-amber-800 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300`}
           >
@@ -110,6 +143,28 @@ export function SymbolStudioView() {
           </button>
         </div>
       </div>
+
+      {exportNotice && (
+        <div
+          className={`flex items-center justify-between border-b px-3 py-1.5 text-[11px] font-mono ${
+            exportNotice.startsWith('Export-Fehler')
+              ? 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-900 dark:bg-rose-950/40 dark:text-rose-300'
+              : 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-900 dark:bg-emerald-950/40 dark:text-emerald-300'
+          }`}
+        >
+          <div className="flex items-center gap-1.5 truncate">
+            <CheckCircle2 className="h-3.5 w-3.5 shrink-0" />
+            <span className="truncate">{exportNotice}</span>
+          </div>
+          <button
+            onClick={() => setExportNotice(null)}
+            className="ml-2 text-current opacity-70 hover:opacity-100"
+            title="Schliessen"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {/* Hauptbereich: 24px Tabelle links, Inspector rechts */}
       <div className="flex min-h-0 flex-1">

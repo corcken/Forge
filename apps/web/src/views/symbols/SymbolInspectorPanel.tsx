@@ -1,8 +1,12 @@
-import { Save, Trash2, Crosshair } from 'lucide-react';
+import { Save, Trash2, Crosshair, Plus } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import type { SymbolDefinition } from '@descriptio-forge/shared';
+import type {
+  SymbolDefinition,
+  SymbolPinDirection,
+  SymbolPinPoint,
+} from '@descriptio-forge/shared';
 import { trpc } from '../../lib/trpc';
-import { BTN, INPUT, ADMIN_TH, ADMIN_TD } from '../../lib/ui';
+import { BTN, INPUT, ADMIN_TH } from '../../lib/ui';
 
 interface Props {
   symbol: SymbolDefinition | null;
@@ -10,12 +14,15 @@ interface Props {
   onDeleted?: () => void;
 }
 
+const DIRECTION_OPTIONS: SymbolPinDirection[] = ['TOP', 'BOTTOM', 'LEFT', 'RIGHT'];
+
 /** Detail- und Editor-Panel fuer das ausgewaehlte IEC 60617 Symbol. */
 export function SymbolInspectorPanel({ symbol, onSaved, onDeleted }: Props) {
   const [name, setName] = useState('');
   const [iecRef, setIecRef] = useState('');
   const [bmk, setBmk] = useState('');
   const [svg, setSvg] = useState('');
+  const [pins, setPins] = useState<SymbolPinPoint[]>([]);
 
   useEffect(() => {
     if (symbol) {
@@ -23,6 +30,7 @@ export function SymbolInspectorPanel({ symbol, onSaved, onDeleted }: Props) {
       setIecRef(symbol.iec60617Ref ?? '');
       setBmk(symbol.bmkPrefix);
       setSvg(symbol.svgContent);
+      setPins(symbol.pins.map((p) => ({ ...p })));
     }
   }, [symbol]);
 
@@ -41,13 +49,46 @@ export function SymbolInspectorPanel({ symbol, onSaved, onDeleted }: Props) {
     );
   }
 
+  const updatePin = (index: number, patch: Partial<SymbolPinPoint>) => {
+    setPins((prev) => prev.map((p, i) => (i === index ? { ...p, ...patch } : p)));
+  };
+
+  const removePin = (index: number) => {
+    setPins((prev) =>
+      prev
+        .filter((_, i) => i !== index)
+        .map((p, i) => ({ ...p, pinIndex: i + 1 })),
+    );
+  };
+
+  const addPin = () => {
+    setPins((prev) => [
+      ...prev,
+      {
+        pinIndex: prev.length + 1,
+        defaultLabel: String(prev.length + 1),
+        xMm: 8,
+        yMm: prev.length % 2 === 0 ? 0 : 16,
+        direction: prev.length % 2 === 0 ? 'TOP' : 'BOTTOM',
+      },
+    ]);
+  };
+
   const handleSave = () => {
+    const cleanBmk = bmk.trim().replace(/^[-+]+/, '').toUpperCase() || 'K';
+    const normalizedPins = pins.map((p, idx) => ({
+      ...p,
+      pinIndex: idx + 1,
+      defaultLabel: p.defaultLabel.trim() || String(idx + 1),
+    }));
+
     upsert.mutate({
       ...symbol,
       name,
       iec60617Ref: iecRef || null,
-      bmkPrefix: bmk.toUpperCase(),
+      bmkPrefix: cleanBmk,
       svgContent: svg,
+      pins: normalizedPins,
       originType: symbol.originType === 'STANDARD' ? 'STANDARD' : 'MANUAL',
       updatedAt: new Date().toISOString(),
     });
@@ -138,26 +179,80 @@ export function SymbolInspectorPanel({ symbol, onSaved, onDeleted }: Props) {
           </div>
         </div>
 
-        {/* Anschlusspunkte (Pins) */}
+        {/* Anschlusspunkte (Pins) – direkt editierbar */}
         <div>
-          <div className="mb-1 text-[11px] font-semibold text-slate-600 dark:text-slate-300">
-            Anschlusspunkte ({symbol.pins.length} Pins)
+          <div className="mb-1.5 flex items-center justify-between">
+            <span className="text-[11px] font-semibold text-slate-600 dark:text-slate-300">
+              Anschlusspunkte ({pins.length} Pins)
+            </span>
+            <button
+              type="button"
+              onClick={addPin}
+              className={`${BTN} flex items-center gap-1 text-[10px]`}
+            >
+              <Plus className="h-3 w-3" />
+              <span>Pin</span>
+            </button>
           </div>
           <div className="overflow-hidden rounded border border-slate-200 dark:border-slate-800">
-            <div className={`${ADMIN_TH} grid grid-cols-4`}>
-              <span>Index</span>
+            <div className={`${ADMIN_TH} grid grid-cols-[1fr_54px_54px_76px_26px] gap-1`}>
               <span>Label</span>
-              <span>Pos (X/Y)</span>
+              <span>X mm</span>
+              <span>Y mm</span>
               <span>Richtung</span>
+              <span></span>
             </div>
-            {symbol.pins.map((p) => (
-              <div key={p.pinIndex} className={`${ADMIN_TD} grid grid-cols-4 font-mono text-[11px]`}>
-                <span>Pin {p.pinIndex}</span>
-                <span className="font-semibold text-sky-600 dark:text-sky-400">{p.defaultLabel}</span>
-                <span>{p.xMm} / {p.yMm} mm</span>
-                <span>{p.direction}</span>
+            {pins.map((p, idx) => (
+              <div
+                key={`${p.pinIndex}-${idx}`}
+                className="grid grid-cols-[1fr_54px_54px_76px_26px] items-center gap-1 border-t border-slate-100 px-1.5 py-1 font-mono text-[11px] dark:border-slate-800"
+              >
+                <input
+                  type="text"
+                  value={p.defaultLabel}
+                  onChange={(e) => updatePin(idx, { defaultLabel: e.target.value })}
+                  className={`${INPUT} h-[22px] w-full px-1 font-semibold text-sky-600 dark:text-sky-400`}
+                />
+                <input
+                  type="number"
+                  step="0.5"
+                  value={p.xMm}
+                  onChange={(e) => updatePin(idx, { xMm: Number(e.target.value) || 0 })}
+                  className={`${INPUT} h-[22px] w-full px-1 text-right`}
+                />
+                <input
+                  type="number"
+                  step="0.5"
+                  value={p.yMm}
+                  onChange={(e) => updatePin(idx, { yMm: Number(e.target.value) || 0 })}
+                  className={`${INPUT} h-[22px] w-full px-1 text-right`}
+                />
+                <select
+                  value={p.direction}
+                  onChange={(e) => updatePin(idx, { direction: e.target.value as SymbolPinDirection })}
+                  className={`${INPUT} h-[22px] w-full px-0.5 text-[10px]`}
+                >
+                  {DIRECTION_OPTIONS.map((dir) => (
+                    <option key={dir} value={dir}>
+                      {dir}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  type="button"
+                  onClick={() => removePin(idx)}
+                  className="flex h-[22px] w-[22px] items-center justify-center rounded text-slate-400 hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30"
+                  title="Pin entfernen"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </button>
               </div>
             ))}
+            {pins.length === 0 && (
+              <div className="p-2 text-center text-[11px] text-slate-400">
+                Keine Pins definiert.
+              </div>
+            )}
           </div>
         </div>
 

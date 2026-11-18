@@ -10,12 +10,17 @@ interface Props {
 }
 
 const IEC_PART_OPTIONS = [
-  { value: '', label: 'Alle Abschnitte (Teil 03 bis Teil 11)' },
+  { value: '', label: 'Alle Abschnitte (Teil 02 bis Teil 11)' },
+  { value: 'Teil 02', label: 'Teil 02: Symbolelemente, Antriebe & Kennzeichen' },
   { value: 'Teil 03', label: 'Teil 03: Leiter, Klemmen & Stecker' },
+  { value: 'Teil 04', label: 'Teil 04: Passive Bauelemente (R, L, C)' },
+  { value: 'Teil 05', label: 'Teil 05: Halbleiter & Optoelektronik' },
   { value: 'Teil 06', label: 'Teil 06: Motoren, Trafos & Netzteile' },
   { value: 'Teil 07', label: 'Teil 07: Kontakte, Schalter, Spulen & Sicherungen' },
   { value: 'Teil 08', label: 'Teil 08: Messinstrumente & Meldeleuchten' },
+  { value: 'Teil 09', label: 'Teil 09: Filter, Messumformer & Übertragung' },
   { value: 'Teil 10', label: 'Teil 10: SPS / PLC & Ein-/Ausgaenge' },
+  { value: 'Teil 11', label: 'Teil 11: Gebäudeinstallation & Verbraucher' },
 ];
 
 /** Modal-Dialog zum Starten des kapitelweisen KI-Symbolsammlers. */
